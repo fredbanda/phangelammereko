@@ -1,0 +1,151 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URI")
+}
+
+model Resume {
+  id           String  @id @default(cuid())
+  userId       String
+  title        String?
+  jobTitle     String?
+  description  String?
+  photoUrl     String?
+  colorHex     String  @default("#000000")
+  borderStyle  String  @default("solid")
+  summary      String?
+  firstName    String?
+  lastName     String?
+  email        String?
+  phone        String?
+  address      String?
+  location     String?
+  city         String?
+  country      String?
+  linkedin     String?
+  github       String?
+  twitter      String?
+  portfolioUrl String?
+
+  workExperiences     WorkExperience[]
+  educations          Education[]
+  certifications      Certification[]
+  skills              Skill[]
+  projectsPublications ProjectsPublication[]
+  awards              Award[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("resumes")
+}
+
+model WorkExperience {
+  id String @id @default(cuid())
+
+  position    String?
+  company     String?
+  description String?
+  startDate   DateTime?
+  endDate     DateTime?
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("work_experiences")
+}
+
+model Education {
+  id String @id @default(cuid())
+
+  institution   String?
+  qualification String?
+  city          String?
+  country       String?
+  startDate     DateTime?
+  endDate       DateTime?
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("educations")
+}
+
+model Skill {
+  id    String  @id @default(cuid())
+  title String?
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("skills")
+}
+
+model Certification {
+  id String @id @default(cuid())
+
+  body          String?
+  certification String?
+
+  year String?
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("certifications")
+}
+
+model ProjectsPublication {
+  id              String  @id @default(cuid())
+  title           String?
+  description     String?
+  link            String?
+  type            String?
+  publisher       String?
+  publicationDate String?
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("projects-publications")
+}
+
+model Award {
+  id          String  @id @default(cuid())
+  title       String?
+  description String?
+  issuer      String?
+  date        String?
+
+  resumeId String
+  resume   Resume @relation(fields: [resumeId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("awards")
+}
