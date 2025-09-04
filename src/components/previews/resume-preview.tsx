@@ -339,11 +339,12 @@ function AwardsSection({ resumeData }: ResumeSectionProps) {
               className="flex items-center justify-between text-sm font-semibold"
               style={{ color: colorHex }}
             >
-              <span>{award.title}</span>
+              <span className="font-semibold">{award.title}</span>
+              
               {award.date && <span>{formatDate(award.date)}</span>}
             </div>
-            <p className="text-xs font-semibold">{award.description}</p>
-            <div className="text-xs whitespace-pre-line">{award.issuer}</div>
+            <p className="text-xs font-normal">{award.description}</p>
+            <div className="text-xs whitespace-pre-line font-semibold">{award.issuer}</div>
           </div>
         ))}
       </div>
@@ -384,12 +385,12 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
             </div>
 
             <div className="text-xs whitespace-pre-line">
-              <p className="text-xs">
+              <p className="text-xs font-semibold">
                 {pub.link && <a href={pub.link}>{pub.link}</a>}
               </p>
-              <p className="text-xs">{pub.type && <span>{pub.type}</span>}</p>
+              <p className="text-xs font-semibold">{pub.type && <span>{pub.type}</span>}</p>
               <p className="text-xs">
-                {pub.publisher && <span>{pub.publisher}</span>}
+                {pub.publisher && <span className="font-semibold">{pub.publisher}</span>}
               </p>
               <p className="text-xs font-normal">{pub.description}</p>
             </div>

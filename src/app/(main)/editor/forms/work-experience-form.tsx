@@ -312,11 +312,11 @@ function WorkExperienceFormItem({
       
       <div className="flex gap-2">
         <Button 
-          variant="outline" 
+          variant="destructive"
           type="button" 
           onClick={() => onGenerateWithAI(index)}
           disabled={isGenerating}
-          className="flex-1"
+          className="flex-1 "
         >
           {isGenerating ? (
             <>

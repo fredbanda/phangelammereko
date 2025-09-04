@@ -291,7 +291,7 @@ function SkillsFormItem({
       
       <div className="flex gap-2">
         <Button 
-          variant="outline" 
+          variant="destructive"
           type="button" 
           onClick={() => onEnhanceWithAI(index)}
           disabled={isEnhancing}

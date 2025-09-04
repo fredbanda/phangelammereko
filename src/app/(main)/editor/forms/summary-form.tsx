@@ -106,7 +106,7 @@ Keep the tone professional, concise, and impactful.
                 >
                   {loading ? (
                     <>
-                      <PropagateLoader size={18} />
+                      <PropagateLoader size={18} color="white" />
                       Generating...
                     </>
                   ) : (
