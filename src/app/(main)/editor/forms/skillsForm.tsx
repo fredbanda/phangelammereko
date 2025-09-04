@@ -99,6 +99,7 @@ Requirements:
 - Limit to 15-20 most important skills
 - No bullet points, no numbering, no categories - just skill names
 - Examples: "JavaScript", "Team Leadership", "Agile Methodology", "Customer Service"
+- If possible include a short description of each skill about 3 to 5 words please 
 
 Generate skills based on the work experiences provided above.
 `);
