@@ -6,6 +6,7 @@ import { auth } from "@clerk/nextjs/server";
 import { del, put } from "@vercel/blob";
 import path from "path";
 
+
 export async function saveResume(values: ResumeValues) {
   const { id } = values;
 
@@ -70,7 +71,7 @@ export async function saveResume(values: ResumeValues) {
     console.log("✅ Database connection successful");
   } catch (err) {
     console.error("❌ Database connection failed:", err);
-    throw new Error("Database connection failed");
+    
   }
 
   const existingResume = id
@@ -81,17 +82,26 @@ export async function saveResume(values: ResumeValues) {
 
   // ✅ Handle photo upload/deletion
   let newPhotoUrl: string | undefined | null = undefined;
+
   if (photo instanceof File) {
     if (existingResume?.photoUrl) {
-      await del(existingResume.photoUrl);
+      await del(existingResume.photoUrl, {
+        token: process.env.PHANGELA_MMEREKO_BLOB_READ_WRITE_TOKEN, // ✅ add token here too
+      });
     }
+
     const blob = await put(`resume_photo/${path.extname(photo.name)}`, photo, {
       access: "public",
+      token: process.env.PHANGELA_MMEREKO_BLOB_READ_WRITE_TOKEN, // ✅ keep token here
+      allowOverwrite: true,
     });
+
     newPhotoUrl = blob.url;
   } else if (photo === null) {
     if (existingResume?.photoUrl) {
-      await del(existingResume.photoUrl);
+      await del(existingResume.photoUrl, {
+        token: process.env.PHANGELA_MMEREKO_BLOB_READ_WRITE_TOKEN, // ✅ also here
+      });
     }
     newPhotoUrl = null;
   }
@@ -152,6 +162,9 @@ export async function saveResume(values: ResumeValues) {
         createdAt: new Date(),
         updatedAt: new Date(),
       },
+      
     });
   }
 }
+
+

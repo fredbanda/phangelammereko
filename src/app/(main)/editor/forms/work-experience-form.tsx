@@ -13,19 +13,26 @@ import { Textarea } from "@/components/ui/textarea";
 import { workExperienceSchema, WorkExperienceValues } from "@/lib/validations";
 import { EditorFormProps } from "@/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { GripHorizontal } from "lucide-react";
-import { useEffect } from "react";
+import { GripHorizontal, Sparkles } from "lucide-react";
+import { useEffect, useState } from "react";
 import { useFieldArray, useForm, UseFormReturn } from "react-hook-form";
 import { closestCenter, DndContext, DragEndEvent, KeyboardSensor, PointerSensor, useSensor, useSensors } from "@dnd-kit/core";
 import {arrayMove, SortableContext, sortableKeyboardCoordinates, useSortable, verticalListSortingStrategy} from "@dnd-kit/sortable";
 import { restrictToVerticalAxis } from "@dnd-kit/modifiers";
 import {CSS} from "@dnd-kit/utilities";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner"; // Assuming you're using sonner for toasts
+import { generateSummary } from "@/actions/gemini";
+
+// Import your generateSummary function
+// import { generateSummary } from "@/lib/ai-service"; // Adjust path as needed
 
 export default function WorkExperienceForm({
   resumeData,
   setResumeData,
 }: EditorFormProps) {
+  const [experienceLoading, setExperienceLoading] = useState<Record<number, boolean>>({});
+
   const form = useForm<WorkExperienceValues>({
     resolver: zodResolver(workExperienceSchema),
     defaultValues: {
@@ -58,15 +65,62 @@ export default function WorkExperienceForm({
     }),
   );
   
-function handleDragEnd(e: DragEndEvent) {
-  const { active, over } = e;
-  if (over && active.id !== over.id) {
-    const oldIndex = fields.findIndex((field) => field.id === active.id);
-    const newIndex = fields.findIndex((field) => field.id === over.id);
-    move(oldIndex, newIndex);
-    return arrayMove(fields, oldIndex, newIndex);
+  function handleDragEnd(e: DragEndEvent) {
+    const { active, over } = e;
+    if (over && active.id !== over.id) {
+      const oldIndex = fields.findIndex((field) => field.id === active.id);
+      const newIndex = fields.findIndex((field) => field.id === over.id);
+      move(oldIndex, newIndex);
+      return arrayMove(fields, oldIndex, newIndex);
+    }
   }
-}
+
+  const handleExperienceGenerateWithAI = async (index: number) => {
+    setExperienceLoading((prevState) => ({ ...prevState, [index]: true }));
+    
+    const currentValues = form.getValues();
+    const selectedExperience = currentValues.workExperiences?.[index];
+    
+    if (!selectedExperience || !selectedExperience.position || !selectedExperience.company) {
+      toast.error(
+        'Please fill in the position and company fields before generating AI description.'
+      );
+      setExperienceLoading((prevState) => ({ ...prevState, [index]: false }));
+      return;
+    }
+
+    const jobTitle = selectedExperience.position;
+    const company = selectedExperience.company;
+    const existingDescription = selectedExperience.description || '';
+
+    try {
+      // Replace this with your actual generateSummary function call
+      const response = await generateSummary(`
+Write resume-ready bullet points for the job title "${jobTitle}" at "${company}". 
+- Use strong action verbs in past tense (e.g., "Developed", "Led", "Implemented").
+- Keep each point concise (1–2 lines max).
+- Focus on measurable achievements and responsibilities.
+- Return ONLY plain text bullet points with no code blocks, no headings, no introductions.
+- Format as an unordered list using <ul><li>...</li></ul> in HTML.
+- Do not include "Duties and Responsibilities" as a heading.
+
+Existing description to incorporate if relevant: ${existingDescription}
+`);
+
+      // Update the form field with the AI-generated content
+      form.setValue(`workExperiences.${index}.description`, response);
+      
+      // Trigger form validation and update
+      await form.trigger(`workExperiences.${index}.description`);
+      
+      toast.success('✅ AI description generated successfully!');
+    } catch (error) {
+      console.error(error);
+      toast.error('❌ Failed to generate description.');
+    } finally {
+      setExperienceLoading((prevState) => ({ ...prevState, [index]: false }));
+    }
+  };
 
   return (
     <div className="mx-auto max-w-xl space-y-6">
@@ -89,16 +143,18 @@ function handleDragEnd(e: DragEndEvent) {
               items={fields}
               strategy={verticalListSortingStrategy}
             >
-          {fields.map((field, index) => (
-            <WorkExperienceFormItem
-              id={field.id}
-              key={field.id}
-              index={index}
-              form={form}
-              remove={remove}
-            />
-          ))}
-          </SortableContext>
+              {fields.map((field, index) => (
+                <WorkExperienceFormItem
+                  id={field.id}
+                  key={field.id}
+                  index={index}
+                  form={form}
+                  remove={remove}
+                  onGenerateWithAI={handleExperienceGenerateWithAI}
+                  isGenerating={experienceLoading[index] || false}
+                />
+              ))}
+            </SortableContext>
           </DndContext>
           <div className="flex justify-center">
             <Button
@@ -127,13 +183,17 @@ interface WorkExperienceFormItemProps {
   form: UseFormReturn<WorkExperienceValues>;
   index: number;
   remove: (index: number) => void;
+  onGenerateWithAI: (index: number) => void;
+  isGenerating: boolean;
 }
 
 function WorkExperienceFormItem({
   form,
   index,
   remove,
-  id
+  id,
+  onGenerateWithAI,
+  isGenerating
 }: WorkExperienceFormItemProps) {
 
   const {attributes, listeners, setNodeRef, transform, transition, isDragging}  = useSortable({id})
@@ -147,10 +207,9 @@ function WorkExperienceFormItem({
         <GripHorizontal className="text-muted-foreground size-5 cursor-grab focus:outline-none" 
         {...attributes}
         {...listeners}
-        
         />
-
       </div>
+      
       <FormField
         control={form.control}
         name={`workExperiences.${index}.position`}
@@ -168,6 +227,7 @@ function WorkExperienceFormItem({
           </FormItem>
         )}
       />
+      
       <FormField
         control={form.control}
         name={`workExperiences.${index}.company`}
@@ -196,10 +256,10 @@ function WorkExperienceFormItem({
               <FormControl>
                 <Input
                   {...field}
-                  type="month" // ✅ only month + year
+                  type="month"
                   placeholder="MM/YYYY"
-                  value={field.value?.slice(0, 7) || ""} // ✅ store YYYY-MM
-                  onChange={(e) => field.onChange(e.target.value)} // ✅ ensure update
+                  value={field.value?.slice(0, 7) || ""}
+                  onChange={(e) => field.onChange(e.target.value)}
                 />
               </FormControl>
               <FormMessage />
@@ -211,24 +271,25 @@ function WorkExperienceFormItem({
           name={`workExperiences.${index}.endDate`}
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Start Date</FormLabel>
+              <FormLabel>End Date</FormLabel> {/* Fixed: was "Start Date" */}
               <FormControl>
                 <Input
                   {...field}
-                  type="month" // ✅ only month + year
-                  placeholder="Start Date e.g. 2022-01"
-                  value={field.value?.slice(0, 7) || ""} // ✅ store YYYY-MM
-                  onChange={(e) => field.onChange(e.target.value)} // ✅ ensure update
+                  type="month"
+                  placeholder="MM/YYYY"
+                  value={field.value?.slice(0, 7) || ""}
+                  onChange={(e) => field.onChange(e.target.value)}
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        </div>
-        <FormDescription className="italic text-xs text-end">
-            Leave <span className="font-bold">end date</span> empty if this is your current position
-        </FormDescription>
+      </div>
+      
+      <FormDescription className="italic text-xs text-end">
+        Leave <span className="font-bold">end date</span> empty if this is your current position
+      </FormDescription>
       
       <FormField
         control={form.control}
@@ -241,15 +302,39 @@ function WorkExperienceFormItem({
                 {...field}
                 placeholder="Description e.g. For the position of a senior developer at Eunny Tech"
                 autoFocus
+                rows={4}
               />
             </FormControl>
             <FormMessage />
           </FormItem>
         )}
       />
-      <Button variant="destructive"  type="button" onClick={() => remove(index)}>
-        Remove
-      </Button>
+      
+      <div className="flex gap-2">
+        <Button 
+          variant="outline" 
+          type="button" 
+          onClick={() => onGenerateWithAI(index)}
+          disabled={isGenerating}
+          className="flex-1"
+        >
+          {isGenerating ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-2"></div>
+              Generating...
+            </>
+          ) : (
+            <>
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate with AI
+            </>
+          )}
+        </Button>
+        
+        <Button variant="destructive" type="button" onClick={() => remove(index)}>
+          Remove
+        </Button>
+      </div>
     </div>
   );
 }

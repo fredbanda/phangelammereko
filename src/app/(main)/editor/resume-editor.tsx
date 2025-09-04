@@ -6,15 +6,22 @@ import { useState, Suspense } from "react";
 import { steps } from "./steps";
 import Breadcrumbs from "./bread-crumbs";
 import ResumePreviewSection from "./ResumePreviewSection";
-import { cn } from "@/lib/utils";
+import { cn, mapToResumevalues } from "@/lib/utils";
 import Footer from "./footer";
 import useUnloadWarning from "@/hooks/useUnloadWarning";
 import useAutoSaveResume from "./useAutoSaveResume";
+import { ResumeServerData } from "@/utils/types";
 
-function ResumeEditorInner() {
+interface ResumeEditorProps {
+  resumeToEdit?: ResumeServerData | null;
+}
+
+function ResumeEditorInner({ resumeToEdit }: ResumeEditorProps) {
   const searchParams = useSearchParams();
 
-  const [resumeData, setResumeData] = useState<ResumeValues>({});
+  const [resumeData, setResumeData] = useState<ResumeValues>(
+    resumeToEdit ? mapToResumevalues(resumeToEdit) : {},
+  );
   const [showSmResumePreview, setShowSmResumePreview] = useState(false);
 
   const { isSaving, hasUnsavedChanges } = useAutoSaveResume(resumeData);
@@ -67,6 +74,7 @@ function ResumeEditorInner() {
         </div>
       </main>
       <Footer
+      
         currentStep={currentStep}
         setCurrentStep={setStep}
         showSmResumePreview={showSmResumePreview}
@@ -77,10 +85,10 @@ function ResumeEditorInner() {
   );
 }
 
-export default function ResumeEditor() {
+export default function ResumeEditor({ resumeToEdit }: ResumeEditorProps) {
   return (
     <Suspense fallback={<div>Loading editor...</div>}>
-      <ResumeEditorInner />
+      <ResumeEditorInner resumeToEdit={resumeToEdit} />
     </Suspense>
   );
 }

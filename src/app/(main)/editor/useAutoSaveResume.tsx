@@ -1,44 +1,47 @@
-"use client";
-
-import { ResumeValues } from "@/lib/validations";
-import useDebounce from "../../../hooks/useDebounce";
-import { useEffect, useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { saveResume } from "@/actions/actions";
-import toast from "react-hot-toast";
+import { Button } from "@/components/ui/button";
+import useDebounce from "@/hooks/useDebounce";
+import { fileReplacer } from "@/lib/utils";
+import { ResumeValues } from "@/lib/validations";
+import { useSearchParams } from "next/navigation";
+import { useEffect, useState } from "react";
+import { toast } from "sonner";
 
 export default function useAutoSaveResume(resumeData: ResumeValues) {
   const searchParams = useSearchParams();
-  const debounceResumeData = useDebounce(resumeData, 1500);
+
+  const debouncedResumeData = useDebounce(resumeData, 1500);
+
   const [resumeId, setResumeId] = useState(resumeData.id);
 
   const [lastSavedData, setLastSavedData] = useState(
     structuredClone(resumeData),
   );
+
   const [isSaving, setIsSaving] = useState(false);
-  const [error, setError] = useState(false);
+  const [isError, setIsError] = useState(false);
 
   useEffect(() => {
-    setError(false);
-  }, [debounceResumeData]);
+    setIsError(false);
+  }, [debouncedResumeData]);
 
   useEffect(() => {
     async function save() {
       try {
         setIsSaving(true);
-        setError(false);
+        setIsError(false);
 
-        const newData = structuredClone(debounceResumeData);
-      
-
+        const newData = structuredClone(debouncedResumeData);
 
         const updatedResume = await saveResume({
           ...newData,
-          ...(lastSavedData.photo?.toString() === newData.photo?.toString() && {
+          ...(JSON.stringify(lastSavedData.photo, fileReplacer) ===
+            JSON.stringify(newData.photo, fileReplacer) && {
             photo: undefined,
           }),
           id: resumeId,
         });
+
         setResumeId(updatedResume.id);
         setLastSavedData(newData);
 
@@ -52,20 +55,49 @@ export default function useAutoSaveResume(resumeData: ResumeValues) {
           );
         }
       } catch (error) {
-        setError(true);
+        setIsError(true);
         console.error(error);
 
-        toast.error("An error occurred while saving your resume");
+        toast.error(
+          <div className="space-y-3">
+            <p>Could not save changes.</p>
+            <Button
+              variant="secondary"
+              onClick={() => {
+                toast.dismiss();
+                save();
+              }}
+              size="sm"
+            >
+              Retry
+            </Button>
+          </div>,
+          {
+            duration: Infinity, // Keep the toast open until manually dismissed
+          },
+        );
+      } finally {
+        setIsSaving(false);
       }
     }
 
-    const hasUnsavedChanges =
-      JSON.stringify(debounceResumeData) !== JSON.stringify(lastSavedData);
+    console.log("debouncedResumeData", JSON.stringify(debouncedResumeData, fileReplacer));
+    console.log("lastSavedData", JSON.stringify(lastSavedData, fileReplacer));
 
-    if (hasUnsavedChanges && !isSaving && debounceResumeData) {
+    const hasUnsavedChanges =
+      JSON.stringify(debouncedResumeData) !== JSON.stringify(lastSavedData, fileReplacer);
+
+    if (hasUnsavedChanges && debouncedResumeData && !isSaving && !isError) {
       save();
     }
-  }, [debounceResumeData, lastSavedData, isSaving, searchParams, resumeId]);
+  }, [
+    debouncedResumeData,
+    isSaving,
+    lastSavedData,
+    isError,
+    resumeId,
+    searchParams,
+  ]);
 
   return {
     isSaving,

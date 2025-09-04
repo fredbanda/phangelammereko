@@ -92,7 +92,12 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
           alt="Photo"
           className="aspect-square object-cover"
           style={{
-            borderRadius: borderStyle === BorderStyles.SQUARE ? "0px" : borderStyle === BorderStyles.CIRCLE ? "9999px" : "10%",
+            borderRadius:
+              borderStyle === BorderStyles.SQUARE
+                ? "0px"
+                : borderStyle === BorderStyles.CIRCLE
+                  ? "9999px"
+                  : "10%",
           }}
         />
       )}
@@ -137,11 +142,11 @@ function SummarySection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" style={{color: borderStyle}} />
+      <hr className="border-2" style={{ color: borderStyle }} />
 
       <div className="break-inside-avoid space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold "
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Professional Summary
@@ -166,7 +171,10 @@ function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
       <hr className="border-2" style={{ color: borderStyle }} />
 
       <div className="space-y-3">
-        <p className="text-lg font-semibold mt-[-14px]" style={{ color: colorHex }}>
+        <p
+          className="mt-[-14px] text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
           Work Experience
         </p>
         {workExperiencesNotEmpty.map((exp, index) => (
@@ -207,12 +215,18 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
       <hr className="border-2" />
 
       <div className="space-y-3">
-        <p className="text-lg font-semibold mt-[-14px]" style={{ color: colorHex }}>
+        <p
+          className="mt-[-14px] text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
           Education
         </p>
         {educationsNotEmpty.map((edu, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
-            <div className="flex items-center justify-between text-sm font-semibold" style={{ color: colorHex }}>
+            <div
+              className="flex items-center justify-between text-sm font-semibold"
+              style={{ color: colorHex }}
+            >
               <span>{edu.institution}</span>
               {edu.startDate && (
                 <span>
@@ -246,7 +260,10 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
       <hr className="border-2" />
 
       <div className="space-y-3">
-        <p className="text-lg font-semibold mt-[-14px]" style={{ color: colorHex }}>
+        <p
+          className="mt-[-14px] text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
           Skills
         </p>
         {skillsNotEmpty.map((skill, index) => (
@@ -273,12 +290,18 @@ function CertificationsSection({ resumeData }: ResumeSectionProps) {
       <hr className="border-2" />
 
       <div className="space-y-3">
-        <p className="text-lg font-semibold mt-[-14px]" style={{ color: colorHex }}>
+        <p
+          className="mt-[-14px] text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
           Certifications
         </p>
         {certificationsNotEmpty.map((cert, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
-            <div className="flex items-center justify-between text-sm font-semibold" style={{ color: colorHex }}>
+            <div
+              className="flex items-center justify-between text-sm font-semibold"
+              style={{ color: colorHex }}
+            >
               <span>{cert.certification}</span>
               {cert.year && <span>{formatDate(cert.year)}</span>}
             </div>
@@ -304,12 +327,18 @@ function AwardsSection({ resumeData }: ResumeSectionProps) {
       <hr className="border-2" />
 
       <div className="space-y-3">
-        <p className="text-lg font-semibold mt-[-14px]" style={{ color: colorHex }}>
+        <p
+          className="mt-[-14px] text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
           Awards
         </p>
         {awardsNotEmpty.map((award, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
-            <div className="flex items-center justify-between text-sm font-semibold" style={{ color: colorHex }}>
+            <div
+              className="flex items-center justify-between text-sm font-semibold"
+              style={{ color: colorHex }}
+            >
               <span>{award.title}</span>
               {award.date && <span>{formatDate(award.date)}</span>}
             </div>
@@ -336,28 +365,37 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
       <hr className="border-2" />
 
       <div className="space-y-3">
-        <p className="text-lg font-semibold mt-[-14px]" style={{ color: colorHex }}>
+        <p
+          className="mt-[-14px] text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
           Projects & Publications
         </p>
         {publicationsNotEmpty.map((pub, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
-            <div className="flex items-center justify-between text-sm font-semibold" style={{ color: colorHex }}>
+            <div
+              className="flex items-center justify-between text-sm font-semibold"
+              style={{ color: colorHex }}
+            >
               <span>{pub.title}</span>
               {pub.publicationDate && (
-                <span>
-                  {formatDate(pub.publicationDate)}
-                </span>
+                <span>{formatDate(pub.publicationDate)}</span>
               )}
             </div>
-            <p className="text-xs font-semibold">{pub.description}</p>
+
             <div className="text-xs whitespace-pre-line">
-              {pub.link && <a href={pub.link}>{pub.link}</a>}
-              {pub.type && <span>{pub.type}</span>}
-              {pub.publisher && <span>{pub.publisher}</span>}
+              <p className="text-xs">
+                {pub.link && <a href={pub.link}>{pub.link}</a>}
+              </p>
+              <p className="text-xs">{pub.type && <span>{pub.type}</span>}</p>
+              <p className="text-xs">
+                {pub.publisher && <span>{pub.publisher}</span>}
+              </p>
+              <p className="text-xs font-normal">{pub.description}</p>
             </div>
           </div>
         ))}
       </div>
     </>
   );
-} 
+}

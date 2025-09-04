@@ -3,12 +3,18 @@
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 if (!process.env.GEMINI_API_KEY) {
+  
   throw new Error("❌ GEMINI_API_KEY is not defined in environment variables");
+
 }
 
 const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
+console.log("✅ Gemini API key is set");
+
 
 export async function generateSummary(prompt: string): Promise<string> {
+  console.log("✅ Generating summary with Gemini...");
+  
   try {
     const model = ai.getGenerativeModel({ model: "gemini-2.5-flash" });
 

@@ -167,7 +167,7 @@ function CertificationFormItem({
           <FormItem>
             <FormLabel>Certifying Body</FormLabel>
             <FormControl>
-              <Input {...field} placeholder="e.g AWS" autoFocus />
+              <Input {...field} value={field.value ?? ""} placeholder="e.g AWS" />
             </FormControl>
             <FormMessage />
           </FormItem>
@@ -182,6 +182,7 @@ function CertificationFormItem({
             <FormControl>
               <Input
                 {...field}
+                value={field.value ?? ""}
                 placeholder="Your qualification e.g. Bachelor of Engineering"
                 autoFocus
               />
@@ -200,6 +201,7 @@ function CertificationFormItem({
             <FormControl>
               <Input
                 {...field}
+                
                 type="month" // ✅ only month + year
                 placeholder="Start Date e.g. 2022-01"
                 value={field.value?.slice(0, 7) || ""} // ✅ store YYYY-MM

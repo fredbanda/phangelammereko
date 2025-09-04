@@ -121,3 +121,14 @@
     @apply bg-background text-foreground;
   }
 }
+
+/* Button custom */
+.inverse-button {
+  background-color: hsl(var(--foreground));
+  color: hsl(var(--background));
+  border: 1px solid hsl(var(--border));
+}
+
+.inverse-button:hover {
+  background-color: hsl(var(--foreground) / 0.9);
+}
