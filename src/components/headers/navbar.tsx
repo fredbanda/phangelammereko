@@ -3,17 +3,14 @@
 import Link from "next/link";
 import Logo from "../../../public/logo.png";
 import Image from "next/image";
-import { SignedIn, SignedOut, SignInButton, UserButton, useUser } from "@clerk/nextjs";
+import { SignedOut, SignInButton, UserButton} from "@clerk/nextjs";
 import { CreditCard, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
-import { dark } from "@clerk/themes";
-import { useTheme } from "next-themes";
 import { useState } from "react";
 import { Button } from "../ui/button";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
-  const { user, isSignedIn} = useUser();
 
   return (
     <header className="shadow-sm">
@@ -27,7 +24,7 @@ export default function Navbar() {
         {/* Desktop Links */}
         <div className="hidden md:flex gap-6 items-center text-black dark:text-white">
           <Link href="/editor">Create Resume</Link>
-          <Link href="/dashboard">Dashboard</Link>
+          <Link href="/resumes">Dashboard</Link>
           <Link href="/vacancies">Current Vacancies</Link>
           <Link href="/jobs/create">Post A Job</Link>
           <Link href="/supportus">Support the Project</Link>

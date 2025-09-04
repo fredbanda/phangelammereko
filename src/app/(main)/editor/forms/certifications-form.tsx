@@ -85,7 +85,7 @@ export default function CertificationsForm({
       <div className="space-y-1.5 text-center">
         <h2 className="text-2xl font-semibold">Certifications</h2>
         <p className="text-muted-foreground text-sm italic">
-          Please add any of your professional certifications
+          Add any of your professional certifications please leave blank if none.
         </p>
       </div>
       <Form {...form}>

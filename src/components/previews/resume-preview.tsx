@@ -268,7 +268,7 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
         </p>
         {skillsNotEmpty.map((skill, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
-            <p className="text-xs font-semibold">{skill.title}</p>
+            <p className="text-xs font-normal">{skill.title}</p>
           </div>
         ))}
       </div>
@@ -386,7 +386,7 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
 
             <div className="text-xs whitespace-pre-line">
               <p className="text-xs font-semibold">
-                {pub.link && <a href={pub.link}>{pub.link}</a>}
+                {pub.link}
               </p>
               <p className="text-xs font-semibold">{pub.type && <span>{pub.type}</span>}</p>
               <p className="text-xs">

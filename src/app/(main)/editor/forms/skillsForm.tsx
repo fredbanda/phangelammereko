@@ -100,6 +100,7 @@ Requirements:
 - No bullet points, no numbering, no categories - just skill names
 - Examples: "JavaScript", "Team Leadership", "Agile Methodology", "Customer Service"
 - If possible include a short description of each skill about 3 to 5 words please 
+- Format as bulleted list with no headings or subheadings please use a big dot (•) for each point.
 
 Generate skills based on the work experiences provided above.
 `);

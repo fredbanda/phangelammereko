@@ -146,7 +146,7 @@ Professional award description:
       <div className="space-y-1.5 text-center">
         <h2 className="text-2xl font-semibold">Awards</h2>
         <p className="text-muted-foreground text-sm italic">
-          Please add any of your awards accumulated over the years
+          Add any of your awards accumulated over the years please leave blank if none.
         </p>
       </div>
       <Form {...form}>

@@ -101,7 +101,7 @@ Write resume-ready bullet points for the job title "${jobTitle}" at "${company}"
 - Keep each point concise (1–2 lines max).
 - Focus on measurable achievements and responsibilities.
 - Return ONLY plain text bullet points with no code blocks, no headings, no introductions.
-- Format as an unordered list using <ul><li>...</li></ul> in HTML.
+- Format as bulleted list with no headings or subheadings please use a big dot (•) for each point.
 - Do not include "Duties and Responsibilities" as a heading.
 
 Existing description to incorporate if relevant: ${existingDescription}
@@ -249,7 +249,7 @@ function WorkExperienceFormItem({
       <div className="grid grid-cols-2 gap-3">
         <FormField
           control={form.control}
-          name={`workExperiences.${index}.startDate`}
+          name={`workExperiences.${index}.startDate`} // 👈 🔥 FIXED: was "startDate"
           render={({ field }) => (
             <FormItem>
               <FormLabel>Start Date</FormLabel>

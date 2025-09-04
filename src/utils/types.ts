@@ -6,6 +6,8 @@ export interface EditorFormProps {
     setResumeData: (data: ResumeValues) => void;
 }
 
+
+
 export const resumeDataInclude = {
     workExperiences: true,
     educations: true,

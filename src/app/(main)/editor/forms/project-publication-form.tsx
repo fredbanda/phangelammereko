@@ -154,7 +154,7 @@ Professional description:
         <h2 className="text-2xl font-semibold">Projects & Publications</h2>
         <p className="text-muted-foreground text-sm italic">
           Please add any of your projects & publications accumulated over the
-          years
+          years please leave blank if none.
         </p>
       </div>
       <Form {...form}>

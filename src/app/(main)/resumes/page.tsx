@@ -1,7 +1,11 @@
 import { Button } from "@/components/ui/button"
+import prisma from "@/utils/prisma"
+import { resumeDataInclude } from "@/utils/types"
+import { auth } from "@clerk/nextjs/server"
 import { PlusSquare } from "lucide-react"
 import { Metadata } from "next"
 import Link from "next/link"
+import ResumeItem from "./ResumeItem"
 
 export const metadata: Metadata = {
   title: "Your CVs / Resumes",
@@ -9,7 +13,31 @@ export const metadata: Metadata = {
   keywords: "curriculum vitae cv resumes"
 }
 
-export default function Page() {
+export default async function Page() {
+  const {userId} = await auth()
+
+  if(!userId){
+    return null;
+  }
+
+  const [resumes, totalCount] = await Promise.all([
+    prisma.resume.findMany({
+      where: {
+        userId: userId
+      },
+      orderBy: {
+        updatedAt: "desc"
+      },
+      include: resumeDataInclude
+    }),
+    prisma.resume.count({
+      where: {
+        userId: userId
+      }
+    })
+  ])
+
+  //TODO: CONTROLLER
   return (
     <main className="max-w-7xl mx-auto w-full py-6 space-y-6">
         <Button asChild className="mx-auto flex w-fit gap-2">
@@ -18,6 +46,15 @@ export default function Page() {
           Create New Resume
           </Link>
         </Button>
+        <div className="space-y-1">
+          <h2 className="text-23xl font-bold">Your Resumes</h2>
+          <p>Total: {totalCount} resumes</p>
+        </div>
+        <div className="flex flex-col sm:grid md:grid-cols-3 grid-cols-2 lg:grid-cols-4 w-full gap-3">
+          {resumes.map((resume) => (
+            <ResumeItem key={resume.id} resume={resume} />
+          ))}
+        </div>
     </main>
   )
 }
