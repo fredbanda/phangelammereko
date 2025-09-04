@@ -142,7 +142,7 @@ function SummarySection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" style={{ color: borderStyle }} />
+      <hr className="border-1 dark:border-gray-600" style={{ color: borderStyle }} />
 
       <div className="break-inside-avoid space-y-3">
         <p
@@ -168,7 +168,7 @@ function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" style={{ color: borderStyle }} />
+      <hr className="border-1 dark:border-gray-600" style={{ color: borderStyle }} />
 
       <div className="space-y-3">
         <p
@@ -212,7 +212,7 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" />
+      <hr className="border-1 dark:border-gray-600" />
 
       <div className="space-y-3">
         <p
@@ -257,7 +257,7 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" />
+      <hr className="border-1 dark:border-gray-600" />
 
       <div className="space-y-3">
         <p
@@ -287,7 +287,7 @@ function CertificationsSection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" />
+      <hr className="border-1 dark:border-gray-600" />
 
       <div className="space-y-3">
         <p
@@ -324,7 +324,7 @@ function AwardsSection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" />
+      <hr className="border-1 dark:border-gray-600" />
 
       <div className="space-y-3">
         <p
@@ -362,7 +362,7 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
 
   return (
     <>
-      <hr className="border-2" />
+      <hr className="border-1 dark:border-gray-600" />
 
       <div className="space-y-3">
         <p
