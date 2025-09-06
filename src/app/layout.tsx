@@ -5,7 +5,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/headers/navbar";
 import { Toaster } from "sonner";
-import Loading from "./loading";
+import Footer from "@/components/headers/Footer";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -40,6 +40,7 @@ export default function RootLayout({
             <Navbar />
             {children}
             <Toaster richColors />
+            <Footer />
           </ThemeProvider>
         </body>
       </html>

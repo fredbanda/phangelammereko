@@ -16,7 +16,7 @@ export default function Navbar() {
     <header className="shadow-sm">
       <div className="max-w-7xl mx-auto p-3 flex items-center justify-between gap-3">
         {/* Logo */}
-        <Link href="/resumes" className="flex items-center gap-2">
+        <Link href="/" className="flex items-center gap-2">
           <Image src={Logo} alt="Logo" width={30} height={30} />
           <span className="text-xl font-bold hidden md:block">Phangela Mmereko</span>
         </Link>

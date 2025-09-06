@@ -1,4 +1,5 @@
 import HeroSection from "@/components/home/hero";
+import HowWeWork from "@/components/home/HowItWorks";
 import { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -11,6 +12,7 @@ export default function Home() {
   return (
     <div className="flex  flex-col items-center justify-center">
       <HeroSection />
+      <HowWeWork />
     </div>
   );
 }
