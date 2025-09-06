@@ -20,13 +20,13 @@ export default function SoftSkillsForm({
   resumeData,
   setResumeData,
 }: EditorFormProps) {
-  const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
-  const [skillLoading, setSkillLoading] = useState<Record<number, boolean>>({});
+  const [isGeneratingSoftSkills, setIsGeneratingSoftSkills] = useState(false);
+  const [softSkillLoading, setSoftSkillLoading] = useState<Record<number, boolean>>({});
 
   const form = useForm<SoftSkillValues>({
     resolver: zodResolver(softSkillSchema),
     defaultValues: {
-      softSkills: resumeData.softSkills || [], // Fixed: Now using softSkills
+      softSkills: resumeData.softSkills || [], 
     },
   });
 
@@ -48,15 +48,15 @@ export default function SoftSkillsForm({
     name: "softSkills",
   });
 
-  const generateSkillsFromWorkExperience = async () => {
-    setIsGeneratingSkills(true);
+  const generateSoftSkillsFromWorkExperience = async () => {
+    setIsGeneratingSoftSkills(true);
 
     // Check if there are work experiences to analyze
     if (!resumeData.workExperiences || resumeData.workExperiences.length === 0) {
       toast.error(
         'Please add some work experiences first before generating soft skills.'
       );
-      setIsGeneratingSkills(false);
+      setIsGeneratingSoftSkills(false);
       return;
     }
 
@@ -108,13 +108,13 @@ Generate SOFT SKILLS based on the work experiences provided above.
       // Parse the response and create skill entries
       const softSkillsList = response
         .split('\n')
-        .map(skill => skill.trim())
-        .filter(skill => skill.length > 0)
-        .slice(0, 15); // Limit to 15 skills
+        .map(soft => soft.trim())
+        .filter(soft => soft.length > 0)
+        .slice(0, 10); // Limit to 15 skills
 
       // Add new AI-generated soft skills to existing ones
-      softSkillsList.forEach(skill => {
-        append({ title: skill });
+      softSkillsList.forEach(soft => {
+        append({ title: soft });
       });
 
       toast.success(`✅ Generated ${softSkillsList.length} soft skills based on your work experience!`);
@@ -122,19 +122,19 @@ Generate SOFT SKILLS based on the work experiences provided above.
       console.error(error);
       toast.error('❌ Failed to generate soft skills from work experience.');
     } finally {
-      setIsGeneratingSkills(false);
+      setIsGeneratingSoftSkills(false);
     }
   };
 
-  const generateSingleSkillWithAI = async (index: number) => {
-    setSkillLoading((prevState) => ({ ...prevState, [index]: true }));
+  const generatingSingleSkillithAI = async (index: number) => {
+    setSoftSkillLoading((prevState) => ({ ...prevState, [index]: true }));
     
     const currentValues = form.getValues();
     
     // Add null check for softSkills array
     if (!currentValues.softSkills || currentValues.softSkills.length <= index) {
       toast.error('Invalid soft skill entry.');
-      setSkillLoading((prevState) => ({ ...prevState, [index]: false }));
+      setSoftSkillLoading((prevState) => ({ ...prevState, [index]: false }));
       return;
     }
     
@@ -142,7 +142,7 @@ Generate SOFT SKILLS based on the work experiences provided above.
     
     if (!currentSoftSkill || !currentSoftSkill.title?.trim()) {
       toast.error('Please enter a soft skill keyword to enhance with AI.');
-      setSkillLoading((prevState) => ({ ...prevState, [index]: false }));
+      setSoftSkillLoading((prevState) => ({ ...prevState, [index]: false }));
       return;
     }
 
@@ -182,7 +182,7 @@ Enhanced soft skill:
       console.error(error);
       toast.error('❌ Failed to enhance soft skill.');
     } finally {
-      setSkillLoading((prevState) => ({ ...prevState, [index]: false }));
+      setSoftSkillLoading((prevState) => ({ ...prevState, [index]: false }));
     }
   };
 
@@ -206,11 +206,11 @@ Enhanced soft skill:
         </p>
         <Button
           type="button"
-          onClick={generateSkillsFromWorkExperience}
-          disabled={isGeneratingSkills}
+          onClick={generateSoftSkillsFromWorkExperience}
+          disabled={isGeneratingSoftSkills}
           className="w-full bg-green-600 hover:bg-green-700"
         >
-          {isGeneratingSkills ? (
+          {isGeneratingSoftSkills ? (
             <>
               <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
               Analyzing Work Experience...
@@ -232,8 +232,8 @@ Enhanced soft skill:
               index={index}
               form={form}
               remove={remove}
-              onEnhanceWithAI={generateSingleSkillWithAI}
-              isEnhancing={skillLoading[index] || false}
+              onEnhanceWithAI={generatingSingleSkillithAI}
+              isEnhancing={softSkillLoading[index] || false}
             />
           ))}
           <div className="flex justify-center">

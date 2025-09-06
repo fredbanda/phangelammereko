@@ -126,17 +126,17 @@ function MoreMenu({ resumeId, onPrintClick }: MoreMenuProps) {
 
         <DropdownMenuContent className="bg-white">
           <DropdownMenuItem
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 cursor-pointer"
             onClick={() => setShowDeleteConfirmation(true)}
           >
-            <Trash2 className="size-4 text-red-600" />
+            <Trash2 className="size-4 text-red-600 cursor-pointer" />
             Delete
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="flex items-center gap-2"
+            className="flex items-center gap-2 cursor-pointer"
             onClick={onPrintClick}
           >
-            <Printer className="size-4 text-blue-600" />
+            <Printer className="size-4 text-blue-600 cursor-pointer" />
             Print
           </DropdownMenuItem>
         </DropdownMenuContent>

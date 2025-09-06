@@ -111,7 +111,7 @@ Generate skills based on the work experiences provided above.
         .split('\n')
         .map(skill => skill.trim())
         .filter(skill => skill.length > 0)
-        .slice(0, 20); // Limit to 20 skills
+        .slice(0, 13); // Limit to 20 skills
 
       // Add new AI-generated skills to existing ones
       skillsList.forEach(skill => {
@@ -196,7 +196,7 @@ Enhanced skill:
       <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
         <div className="flex items-center gap-2">
           <Brain className="h-5 w-5 text-blue-600" />
-          <h3 className="font-semibold text-blue-800">AI Skills Generator</h3>
+          <h3 className="font-semibold text-blue-800">AI Hard Skills Generator</h3>
         </div>
         <p className="text-sm text-blue-700">
           Let AI analyze your work experiences and generate relevant skills for your resume.
