@@ -11,13 +11,19 @@ interface ResumePreviewProps {
   contentRef?: React.Ref<HTMLDivElement>;
 }
 
-export const formatDate = (dateString?: string) => {
-  if (!dateString) return "";
+export const formatDate = (dateInput?: string | Date | null) => {
+  if (!dateInput) return "";
 
-  // If value is YYYY-MM, append `-01` to make it a valid full date
-  const normalized = dateString.length === 7 ? `${dateString}-01` : dateString;
-
-  const date = new Date(normalized);
+  let date: Date;
+  
+  if (dateInput instanceof Date) {
+    date = dateInput;
+  } else {
+    // Handle string input (existing logic)
+    const normalized = dateInput.length === 7 ? `${dateInput}-01` : dateInput;
+    date = new Date(normalized);
+  }
+  
   if (isNaN(date.getTime())) return ""; // fallback if still invalid
 
   return new Intl.DateTimeFormat("en-US", {
@@ -25,7 +31,6 @@ export const formatDate = (dateString?: string) => {
     year: "numeric",
   }).format(date);
 };
-
 export default function ResumePreview({
   resumeData,
   className,
@@ -55,6 +60,7 @@ export default function ResumePreview({
         <WorkExperienceSection resumeData={resumeData} />
         <EducationSection resumeData={resumeData} />
         <SkillsSection resumeData={resumeData} />
+        <SoftSkillsSection resumeData={resumeData} />
         <CertificationsSection resumeData={resumeData} />
         <AwardsSection resumeData={resumeData} />
         <ProjectsPublicationSection resumeData={resumeData} />
@@ -131,7 +137,7 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
             {jobTitle}
           </p>
         </div>
-        <p className="text-xs text-gray-500">
+        <p className="text-xs text-gray-500 font-semibold">
           {address}
           {address && location && city && country ? ", " : ""}
           {location}
@@ -140,9 +146,8 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
           {city && country ? ", " : ""}
           {country}
         </p>
-        <p className="flex justify-between text-xs text-gray-500">
-          <span>{email}</span>
-          <span>{phone}</span>
+        <p className=" text-xs text-gray-500">
+          {[email, phone].filter(Boolean).join(" | ")}
         </p>
 
         <p className="text-xs text-gray-500">
@@ -282,11 +287,40 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
           className=" text-lg font-semibold"
           style={{ color: colorHex }}
         >
-          Skills
+         Hard Skills
         </p>
         {skillsNotEmpty.map((skill, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
             <p className="text-xs font-normal">{skill.title}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SoftSkillsSection({ resumeData }: ResumeSectionProps) {
+  const { softSkills, colorHex } = resumeData;
+
+  const softSkillsNotEmpty = softSkills?.filter(
+    (soft) => Object.values(soft).filter(Boolean).length > 0,
+  );
+  if (!softSkillsNotEmpty) return null;
+
+  return (
+    <>
+      <hr className="border-1 dark:border-gray-600" />
+
+      <div className="space-y-3">
+        <p
+          className=" text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
+          Soft Skills
+        </p>
+        {softSkillsNotEmpty.map((soft, index) => (
+          <div key={index} className="break-inside-avoid space-y-1">
+            <p className="text-xs font-normal">{soft.title}</p>
           </div>
         ))}
       </div>
@@ -321,7 +355,7 @@ function CertificationsSection({ resumeData }: ResumeSectionProps) {
               style={{ color: colorHex }}
             >
               <span>{cert.certification}</span>
-              {cert.year && <span>{formatDate(cert.year)}</span>}
+              {cert.year && <span>{(cert.year)}</span>}
             </div>
             <p className="text-xs font-semibold">{cert.body}</p>
           </div>

@@ -8,25 +8,25 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { skillSchema, SkillValues } from "@/lib/validations";
+import { softSkillSchema, SoftSkillValues } from "@/lib/validations";
 import { EditorFormProps } from "@/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontal, Sparkles, Brain } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useFieldArray, useForm, UseFormReturn } from "react-hook-form";
-import { toast } from "sonner"; // Assuming you're using sonner for toasts
+import { toast } from "sonner";
 
-export default function SkillsForm({
+export default function SoftSkillsForm({
   resumeData,
   setResumeData,
 }: EditorFormProps) {
   const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
   const [skillLoading, setSkillLoading] = useState<Record<number, boolean>>({});
 
-  const form = useForm<SkillValues>({
-    resolver: zodResolver(skillSchema),
+  const form = useForm<SoftSkillValues>({
+    resolver: zodResolver(softSkillSchema),
     defaultValues: {
-      skills: resumeData.skills || [],
+      softSkills: resumeData.softSkills || [], // Fixed: Now using softSkills
     },
   });
 
@@ -36,8 +36,8 @@ export default function SkillsForm({
       if (!isValid) return;
       setResumeData({
         ...resumeData,
-        skills:
-          values.skills?.filter((ski) => ski !== undefined) || [],
+        softSkills: // Fixed: Now updating softSkills instead of skills
+          values.softSkills?.filter((softSkill) => softSkill !== undefined) || [],
       });
     });
     return unsubscribe;
@@ -45,7 +45,7 @@ export default function SkillsForm({
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "skills",
+    name: "softSkills",
   });
 
   const generateSkillsFromWorkExperience = async () => {
@@ -54,7 +54,7 @@ export default function SkillsForm({
     // Check if there are work experiences to analyze
     if (!resumeData.workExperiences || resumeData.workExperiences.length === 0) {
       toast.error(
-        'Please add some work experiences first before generating skills.'
+        'Please add some work experiences first before generating soft skills.'
       );
       setIsGeneratingSkills(false);
       return;
@@ -78,50 +78,49 @@ Professional: ${resumeData.firstName} ${resumeData.lastName}
 Current Role/Title: ${resumeData.jobTitle || 'Not specified'}` : '';
 
       const response = await generateSummary(`
-Analyze the following work experiences and generate a comprehensive list of relevant skills that would be valuable for this professional's resume.
+Analyze the following work experiences and generate a comprehensive list of relevant SOFT SKILLS that would be valuable for this professional's resume.
 
 ${personalContext}
 
 Work Experiences:
 ${workExperienceSummary}
 
-Please generate skills in the following categories:
-1. Technical Skills (programming languages, software, tools, technologies)
-2. Industry-Specific Skills (domain knowledge, certifications, methodologies)
-3. Only technical skills based on the listed experience, nothing like leadership, management, sales, marketing, etc
+Please generate SOFT SKILLS in the following categories:
+1. Communication Skills (verbal communication, written communication, presentation skills, active listening)
+2. Leadership Skills (team leadership, mentoring, delegation, decision-making, conflict resolution)
+3. Problem-Solving Skills (critical thinking, analytical thinking, creativity, innovation, adaptability)
+4. Interpersonal Skills (teamwork, collaboration, emotional intelligence, networking, customer service)
+5. Personal Skills (time management, organization, attention to detail, work ethic, flexibility)
 
 Requirements:
-- Return ONLY the skills as plain text
+- Return ONLY soft skills (people skills, personality traits, work habits) - NO technical skills
 - Each skill should be on a separate line
-- Focus on skills that are clearly demonstrated or implied by the work experiences
-- Include both hard and soft skills
+- Focus on soft skills that are clearly demonstrated or implied by the work experiences
 - Prioritize skills that are most relevant to the positions held
-- Limit to 6-8 most important skills
-- Bullet points, no numbering, no categories - just skill names
-- Examples: "JavaScript", "Team Leadership", "Agile Methodology", "Customer Service"
-- If possible include a short description of each skill about 3 to 5 words please like CI/CD & DevOps Practices: Automating deployments, improving code quality
-- Format as bulleted list with no headings or subheadings please use a big dot (•) for each point.
--please keep the limit of 6 - 8 skills
+- Please Limit to 3-5 most important soft skills
+- If possible include a short description of each skill about 3 to 5 words please like Leadership: guides, mentors, and inspires
+- Format as bulleted list with no headings or subheadings please use a big dot (•) for each point
+- Examples: "Team Leadership", "Problem Solving", "Communication", "Time Management", "Adaptability"
 
-Generate skills based on the work experiences provided above.
+Generate SOFT SKILLS based on the work experiences provided above.
 `);
 
       // Parse the response and create skill entries
-      const skillsList = response
+      const softSkillsList = response
         .split('\n')
         .map(skill => skill.trim())
         .filter(skill => skill.length > 0)
-        .slice(0, 20); // Limit to 20 skills
+        .slice(0, 15); // Limit to 15 skills
 
-      // Add new AI-generated skills to existing ones
-      skillsList.forEach(skill => {
+      // Add new AI-generated soft skills to existing ones
+      softSkillsList.forEach(skill => {
         append({ title: skill });
       });
 
-      toast.success(`✅ Generated ${skillsList.length} skills based on your work experience!`);
+      toast.success(`✅ Generated ${softSkillsList.length} soft skills based on your work experience!`);
     } catch (error) {
       console.error(error);
-      toast.error('❌ Failed to generate skills from work experience.');
+      toast.error('❌ Failed to generate soft skills from work experience.');
     } finally {
       setIsGeneratingSkills(false);
     }
@@ -132,17 +131,17 @@ Generate skills based on the work experiences provided above.
     
     const currentValues = form.getValues();
     
-    // Add null check for skills array
-    if (!currentValues.skills || currentValues.skills.length <= index) {
-      toast.error('Invalid skill entry.');
+    // Add null check for softSkills array
+    if (!currentValues.softSkills || currentValues.softSkills.length <= index) {
+      toast.error('Invalid soft skill entry.');
       setSkillLoading((prevState) => ({ ...prevState, [index]: false }));
       return;
     }
     
-    const currentSkill = currentValues.skills[index];
+    const currentSoftSkill = currentValues.softSkills[index];
     
-    if (!currentSkill || !currentSkill.title?.trim()) {
-      toast.error('Please enter a skill keyword to enhance with AI.');
+    if (!currentSoftSkill || !currentSoftSkill.title?.trim()) {
+      toast.error('Please enter a soft skill keyword to enhance with AI.');
       setSkillLoading((prevState) => ({ ...prevState, [index]: false }));
       return;
     }
@@ -154,30 +153,34 @@ Generate skills based on the work experiences provided above.
       ).join(', ') || 'No work experience provided';
 
       const response = await generateSummary(`
-Enhance the following skill entry for a professional resume. The person has worked as: ${workContext}
+Enhance the following SOFT SKILL entry for a professional resume. The person has worked as: ${workContext}
 
-Current skill: "${currentSkill.title}"
+Current soft skill: "${currentSoftSkill.title}"
 
-Please provide an enhanced, professional version of this skill that:
+Please provide an enhanced, professional version of this SOFT SKILL that:
+- Is a people skill, personality trait, or work habit (NOT a technical skill)
 - Is concise and resume-appropriate
-- Uses industry-standard terminology
-- Is specific and measurable where possible
+- Uses industry-standard terminology for soft skills
+- Is specific and professional
 - Fits the professional context
-- Returns ONLY the enhanced skill name, no explanations
+- Returns ONLY the enhanced soft skill name, no explanations
 
-Example: If input is "coding" and person worked as "Software Developer", output might be "Full-Stack Development" or "Software Development"
+Examples: 
+- Input: "talking" → Output: "Verbal Communication"
+- Input: "leading" → Output: "Team Leadership" 
+- Input: "organizing" → Output: "Project Organization"
 
-Enhanced skill:
+Enhanced soft skill:
 `);
 
-      // Update the form field with the enhanced skill
-      form.setValue(`skills.${index}.title`, response.trim());
-      await form.trigger(`skills.${index}.title`);
+      // Update the form field with the enhanced soft skill
+      form.setValue(`softSkills.${index}.title`, response.trim());
+      await form.trigger(`softSkills.${index}.title`);
       
-      toast.success('✅ Skill enhanced with AI!');
+      toast.success('✅ Soft skill enhanced with AI!');
     } catch (error) {
       console.error(error);
-      toast.error('❌ Failed to enhance skill.');
+      toast.error('❌ Failed to enhance soft skill.');
     } finally {
       setSkillLoading((prevState) => ({ ...prevState, [index]: false }));
     }
@@ -186,26 +189,26 @@ Enhanced skill:
   return (
     <div className="mx-auto max-w-xl space-y-6">
       <div className="space-y-1.5 text-center">
-        <h2 className="text-2xl font-semibold">Hard Skills</h2>
+        <h2 className="text-2xl font-semibold">Soft Skills</h2>
         <p className="text-muted-foreground text-sm italic">
-          Add your technical/hard and soft skills for your CV/resume.
+          Add your interpersonal skills, leadership abilities, and personal qualities for your CV/resume.
         </p>
       </div>
       
       {/* AI Skills Generation Section */}
-      <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-3">
+      <div className="bg-green-50 border border-green-200 rounded-lg p-4 space-y-3">
         <div className="flex items-center gap-2">
-          <Brain className="h-5 w-5 text-blue-600" />
-          <h3 className="font-semibold text-blue-800">AI Skills Generator</h3>
+          <Brain className="h-5 w-5 text-green-600" />
+          <h3 className="font-semibold text-green-800">AI Soft Skills Generator</h3>
         </div>
-        <p className="text-sm text-blue-700">
-          Let AI analyze your work experiences and generate relevant skills for your resume.
+        <p className="text-sm text-green-700">
+          Let AI analyze your work experiences and generate relevant soft skills for your resume.
         </p>
         <Button
           type="button"
           onClick={generateSkillsFromWorkExperience}
           disabled={isGeneratingSkills}
-          className="w-full bg-blue-600 hover:bg-blue-700"
+          className="w-full bg-green-600 hover:bg-green-700"
         >
           {isGeneratingSkills ? (
             <>
@@ -215,7 +218,7 @@ Enhanced skill:
           ) : (
             <>
               <Sparkles className="mr-2 h-4 w-4" />
-              Generate Skills from Work Experience
+              Generate Soft Skills from Work Experience
             </>
           )}
         </Button>
@@ -224,7 +227,7 @@ Enhanced skill:
       <Form {...form}>
         <form className="space-y-3">
           {fields.map((field, index) => (
-            <SkillsFormItem
+            <SoftSkillsFormItem
               key={field.id}
               index={index}
               form={form}
@@ -242,7 +245,7 @@ Enhanced skill:
                 })
               }
             >
-              Add Your Skills
+              Add Soft Skill
             </Button>
           </div>
         </form>
@@ -251,37 +254,37 @@ Enhanced skill:
   );
 }
 
-interface SkillsFormItemProps {
-  form: UseFormReturn<SkillValues>;
+interface SoftSkillsFormItemProps {
+  form: UseFormReturn<SoftSkillValues>;
   index: number;
   remove: (index: number) => void;
   onEnhanceWithAI: (index: number) => void;
   isEnhancing: boolean;
 }
 
-function SkillsFormItem({
+function SoftSkillsFormItem({
   form,
   index,
   remove,
   onEnhanceWithAI,
   isEnhancing
-}: SkillsFormItemProps) {
+}: SoftSkillsFormItemProps) {
   return (
     <div className="bg-background space-y-3 rounded-md border p-3">
       <div className="flex justify-between gap-2">
-        <span className="font-semibold">Hard Skills {index + 1}</span>
+        <span className="font-semibold">Soft Skill {index + 1}</span>
         <GripHorizontal className="text-muted-foreground size-5 cursor-grab" />
       </div>
       
       <FormField
         control={form.control}
-        name={`skills.${index}.title`}
+        name={`softSkills.${index}.title`}
         render={({ field }) => (
           <FormItem>
             <FormControl>
               <Textarea
                 {...field}
-                placeholder="e.g. JavaScript, Team Leadership, Project Management"
+                placeholder="e.g. Team Leadership, Problem Solving, Communication, Time Management"
                 autoFocus
                 rows={2}
               />
@@ -293,7 +296,7 @@ function SkillsFormItem({
       
       <div className="flex gap-2">
         <Button 
-          variant="destructive"
+          variant="secondary"
           type="button" 
           onClick={() => onEnhanceWithAI(index)}
           disabled={isEnhancing}

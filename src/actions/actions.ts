@@ -21,6 +21,7 @@ export async function saveResume(values: ResumeValues) {
       workExperiences = [],
       educations = [],
       skills = [],
+      softSkills = [],
       certifications = [],
       awards = [],
       projectsPublications = [],
@@ -84,6 +85,7 @@ export async function saveResume(values: ResumeValues) {
             workExperiences: true,
             educations: true,
             skills: true,
+            softSkills: true,
             certifications: true,
             awards: true,
             projectsPublications: true,
@@ -164,91 +166,135 @@ export async function saveResume(values: ResumeValues) {
     }
 
     // Prepare the data for Prisma operation
-    const updateData = {
+// Add this helper function at the top of your file
+const convertStringToDate = (dateString?: string): Date | null => {
+  if (!dateString || dateString.trim() === '') return null;
+  
+  // Handle YYYY-MM format by appending -01
+  const normalized = dateString.length === 7 ? `${dateString}-01` : dateString;
+  const date = new Date(normalized);
+  
+  return isNaN(date.getTime()) ? null : date;
+};
+
+// Your updated code
+const updateData = {
+  ...resumeValues,
+  ...(newPhotoUrl !== undefined && { photoUrl: newPhotoUrl }),
+  workExperiences: {
+    deleteMany: {},
+    create: workExperiences.map((exp) => ({
+      ...exp,
+      startDate: convertStringToDate(exp.startDate),
+      endDate: convertStringToDate(exp.endDate),
+    })),
+  },
+  educations: {
+    deleteMany: {},
+    create: educations.map((edu) => ({
+      ...edu,
+      startDate: convertStringToDate(edu.startDate),
+      endDate: convertStringToDate(edu.endDate),
+    })),
+  },
+  skills: {
+    deleteMany: {},
+    create: skills,
+  },
+  softSkills: {
+    deleteMany: {},
+    create: softSkills,
+  },
+  certifications: {
+    deleteMany: {},
+    create: certifications.map((cert) => ({
+      ...cert,
+      // If certifications have date fields, transform them too
+      year: convertStringToDate(cert.year),
+    })),
+  },
+  awards: {
+    deleteMany: {},
+    create: awards.map((award) => ({
+      ...award,
+      // If awards have date fields, transform them too  
+      date: convertStringToDate(award.date),
+    })),
+  },
+  projectsPublications: {
+    deleteMany: {},
+    create: projectsPublications.map((pub) => ({
+      ...pub,
+      // If publications have date fields, transform them too
+      publicationDate: convertStringToDate(pub.publicationDate),
+    })),
+  },
+  updatedAt: new Date(),
+};
+
+console.log("14. Final update data structure prepared");
+
+// ✅ Save/update in DB
+let result;
+if (id) {
+  console.log("15. Attempting to UPDATE resume...");
+  result = await prisma.resume.update({
+    where: { id, userId },
+    data: updateData,
+  });
+  console.log("16. ✅ Resume updated successfully");
+} else {
+  console.log("15. Attempting to CREATE resume...");
+  result = await prisma.resume.create({
+    data: {
       ...resumeValues,
-      ...(newPhotoUrl !== undefined && { photoUrl: newPhotoUrl }),
+      userId,
+      photoUrl: newPhotoUrl,
       workExperiences: {
-        deleteMany: {},
         create: workExperiences.map((exp) => ({
           ...exp,
-          startDate: exp.startDate ? new Date(exp.startDate) : undefined,
-          endDate: exp.endDate ? new Date(exp.endDate) : undefined,
+          startDate: convertStringToDate(exp.startDate),
+          endDate: convertStringToDate(exp.endDate),
         })),
       },
       educations: {
-        deleteMany: {},
         create: educations.map((edu) => ({
           ...edu,
-          startDate: edu.startDate ? new Date(edu.startDate) : undefined,
-          endDate: edu.endDate ? new Date(edu.endDate) : undefined,
+          startDate: convertStringToDate(edu.startDate),
+          endDate: convertStringToDate(edu.endDate),
         })),
       },
-      skills: {
-        deleteMany: {},
-        create: skills,
+      skills: { create: skills },
+      softSkills: { create: softSkills },
+      certifications: { 
+        create: certifications.map((cert) => ({
+          ...cert,
+          year: cert.year
+        }))
       },
-      certifications: {
-        deleteMany: {},
-        create: certifications,
+      awards: { 
+        create: awards.map((award) => ({
+          ...award,
+          date: award.date,
+        }))
       },
-      awards: {
-        deleteMany: {},
-        create: awards,
+      projectsPublications: { 
+        create: projectsPublications.map((pub) => ({
+          ...pub,
+          publicationDate: pub.publicationDate,
+        }))
       },
-      projectsPublications: {
-        deleteMany: {},
-        create: projectsPublications,
-      },
+      createdAt: new Date(),
       updatedAt: new Date(),
-    };
+    },
+  });
+  console.log("16. ✅ Resume created successfully");
+}
 
-    console.log("14. Final update data structure prepared");
+// ✅ Revalidate the path to update cached data
+revalidatePath("/resumes");
 
-    // ✅ Save/update in DB
-    let result;
-    if (id) {
-      console.log("15. Attempting to UPDATE resume...");
-      result = await prisma.resume.update({
-        where: { id, userId },
-        data: updateData,
-      });
-      console.log("16. ✅ Resume updated successfully");
-    } else {
-      console.log("15. Attempting to CREATE resume...");
-      result = await prisma.resume.create({
-        data: {
-          ...resumeValues,
-          userId,
-          photoUrl: newPhotoUrl,
-          workExperiences: {
-            create: workExperiences.map((exp) => ({
-              ...exp,
-              startDate: exp.startDate ? new Date(exp.startDate) : undefined,
-              endDate: exp.endDate ? new Date(exp.endDate) : undefined,
-            })),
-          },
-          educations: {
-            create: educations.map((edu) => ({
-              ...edu,
-              startDate: edu.startDate ? new Date(edu.startDate) : undefined,
-              endDate: edu.endDate ? new Date(edu.endDate) : undefined,
-            })),
-          },
-          skills: { create: skills },
-          certifications: { create: certifications },
-          awards: { create: awards },
-          projectsPublications: { create: projectsPublications },
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        },
-      });
-      console.log("16. ✅ Resume created successfully");
-    }
-
-    // ✅ Revalidate the path to update cached data
-    revalidatePath("/resumes");
-    
-    return result;
+return result;
 
   } catch (error) {
     console.error("❌ Error in saveResume:", error);
@@ -288,6 +334,10 @@ export async function deleteResume(id: string) {
     
     await tx.skill.deleteMany({
       where: { resumeId: id }
+    });
+
+    await tx.softSkill.deleteMany({
+      where: {resumeId: id}
     });
     
     await tx.certification.deleteMany({

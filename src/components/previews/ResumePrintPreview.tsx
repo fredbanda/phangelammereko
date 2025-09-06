@@ -44,6 +44,7 @@ const ResumePrintView = forwardRef<HTMLDivElement, ResumePrintViewProps>(
         <WorkExperienceSection resumeData={resumeData} />
         <EducationSection resumeData={resumeData} />
         <SkillsSection resumeData={resumeData} />
+        <SoftSkillsSection resumeData={resumeData} />
         <CertificationsSection resumeData={resumeData} />
         <AwardsSection resumeData={resumeData} />
         <ProjectsPublicationSection resumeData={resumeData} />
@@ -136,10 +137,9 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
           {city && country ? ", " : ""}
           {country}
         </p>
-        <div className="flex justify-center gap-8 text-xs text-gray-500">
-          <span>{email}</span>
-          <span>{phone}</span>
-        </div>
+        <p className=" text-xs text-gray-500">
+          {[email, phone].filter(Boolean).join(" | ")}
+        </p>
 
         <p className="text-xs text-gray-500">
           {[linkedin, github, twitter, portfolioUrl]
@@ -162,7 +162,7 @@ function SummarySection({ resumeData }: ResumeSectionProps) {
 
       <div className="break-inside-avoid space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold"
+          className="text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Professional Summary
@@ -188,7 +188,7 @@ function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold"
+          className="text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Work Experience
@@ -230,7 +230,7 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold"
+          className="text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Education
@@ -275,14 +275,43 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold"
+          className="text-lg font-semibold"
           style={{ color: colorHex }}
         >
-          Skills
+          Hard Skills
         </p>
         {skillsNotEmpty.map((skill, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
             <p className="text-xs font-normal">{skill.title}</p>
+          </div>
+        ))}
+      </div>
+    </>
+  );
+}
+
+function SoftSkillsSection({ resumeData }: ResumeSectionProps) {
+  const { softSkills, colorHex } = resumeData;
+
+  const softSkillsNotEmpty = softSkills?.filter(
+    (soft) => Object.values(soft).filter(Boolean).length > 0,
+  );
+  if (!softSkillsNotEmpty) return null;
+
+  return (
+    <>
+      <hr className="border-1 dark:border-gray-600" />
+
+      <div className="space-y-3">
+        <p
+          className="text-lg font-semibold"
+          style={{ color: colorHex }}
+        >
+          Soft Skills
+        </p>
+        {softSkillsNotEmpty.map((soft, index) => (
+          <div key={index} className="break-inside-avoid space-y-1">
+            <p className="text-xs font-normal">{soft.title}</p>
           </div>
         ))}
       </div>
@@ -305,7 +334,7 @@ function CertificationsSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold"
+          className="text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Certifications
@@ -342,7 +371,7 @@ function AwardsSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold"
+          className="text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Awards
@@ -381,7 +410,7 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className="mt-[-14px] text-lg font-semibold"
+          className="text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Projects & Publications

@@ -87,6 +87,14 @@ export const skillSchema = z.object({
 
 export type SkillValues = z.infer<typeof skillSchema>
 
+export const softSkillSchema = z.object({
+  softSkills: z.array(z.object({
+    title: optionalString,
+  })).optional()
+})
+
+export type SoftSkillValues = z.infer<typeof softSkillSchema>
+
 export const awardSchema = z.object({
   awards: z.array(z.object({
     title: optionalString,
@@ -124,6 +132,7 @@ export const resumeSchema = z.object({
     ...educationSchema.shape,
     ...certificationSchema.shape,
     ...skillSchema.shape,
+    ...softSkillSchema.shape,
     ...awardSchema.shape,
     ...summarySchema.shape,
     ...projectsPublicationSchema.shape,
@@ -140,6 +149,7 @@ export const generateSummarySchema = z.object({
   jobTitle: optionalString,
   ...workExperienceSchema.shape,
   ...skillSchema.shape,
+  ...softSkillSchema.shape,
   ...summarySchema.shape,
   ...awardSchema.shape,
   ...projectsPublicationSchema.shape,

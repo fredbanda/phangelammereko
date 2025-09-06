@@ -12,6 +12,7 @@ export const resumeDataInclude = {
     workExperiences: true,
     educations: true,
     skills: true,
+    softSkills: true,
     certifications: true,
     awards: true,  
     projectsPublications: true,

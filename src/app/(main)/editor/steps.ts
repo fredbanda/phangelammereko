@@ -8,6 +8,7 @@ import CertificationsForm from "./forms/certifications-form";
 import AwardForm from "./forms/awards-form";
 import SummaryForm from "./forms/summary-form";
 import ProjectsPublicationForm from "./forms/project-publication-form";
+import SoftSkillsForm from "./forms/SoftSkills";
 
 export const steps: {
     title: string;
@@ -36,9 +37,14 @@ export const steps: {
         key: "education",
     },
     {
-        title: "Skills",
+        title: "Hard Skills",
         component: SkillsForm,
         key: "skills",
+    },
+    {
+        title: "Soft Skills",
+        component: SoftSkillsForm,
+        key: "soft-skills",
     },
     {
         title: "Certifications",
