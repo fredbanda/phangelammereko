@@ -10,21 +10,26 @@ export const generalInformSchema = z.object({
 export type GeneralInfoValues = z.infer<typeof generalInformSchema>
 
 export const personalInformSchema = z.object({
-    photo: z.custom<File | undefined>()
-  .refine(
-    (file) => !file || (file instanceof File && file.type.startsWith("image/")),
-    {
-      message: "Please upload a valid image", 
-       path: ["photo"],
-    }
-       )
-  .refine(file => !file || file.size <= 1024 * 1024 * 4, {
-    message: "Please upload a file smaller than 4MB", 
-     path: ["photo"],
-  }),
-  firstName: optionalString,      
+  // Updated photo schema to handle File, null, undefined, or string (existing URL)
+  photo: z.union([
+    z.instanceof(File).refine(
+      (file) => file.type.startsWith("image/"),
+      {
+        message: "Please upload a valid image",
+      }
+    ).refine(
+      (file) => file.size <= 1024 * 1024 * 4,
+      {
+        message: "Please upload a file smaller than 4MB",
+      }
+    ),
+    z.null(), // For explicit removal
+    z.string(), // For existing URL
+    z.undefined(), // For no change
+  ]).optional(),
+  firstName: optionalString,
   lastName: optionalString,
-   email: optionalString,         
+  email: optionalString,
   phone: optionalString,
   address: optionalString,
   location: optionalString,

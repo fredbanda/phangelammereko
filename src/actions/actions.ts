@@ -3,9 +3,8 @@
 import { resumeSchema, ResumeValues } from "@/lib/validations";
 import prisma from "@/utils/prisma";
 import { auth } from "@clerk/nextjs/server";
-import { del, put } from "@vercel/blob";
 import { revalidatePath } from "next/cache";
-import path from "path";
+import cloudinary from "@/utils/cloudinary";
 
 export async function saveResume(values: ResumeValues) {
   console.log("🔥 FUNCTION CALLED - saveResume started");
@@ -77,15 +76,7 @@ export async function saveResume(values: ResumeValues) {
 
     console.log("7. User ID:", userId);
 
-    // Check DB connection
-    try {
-      await prisma.$queryRaw`SELECT 1`;
-      console.log("8. ✅ Database connection successful");
-    } catch (err) {
-      console.error("8. ❌ Database connection failed:", err);
-      throw err;
-    }
-
+    // Check existing resume
     const existingResume = id
       ? await prisma.resume.findUnique({ 
           where: { id, userId },
@@ -108,31 +99,66 @@ export async function saveResume(values: ResumeValues) {
 
     if (id && !existingResume) throw new Error("Resume not found");
 
-    // ✅ Handle photo upload/deletion
+    // ✅ Handle photo upload/deletion with Cloudinary
     let newPhotoUrl: string | undefined | null = undefined;
 
     if (photo instanceof File) {
       console.log("12. Processing photo upload...");
+
+      // ✅ Delete old photo if exists
       if (existingResume?.photoUrl) {
-        await del(existingResume.photoUrl, {
-          token: process.env.PHANGELA_MMEREKO_BLOB_READ_WRITE_TOKEN,
-        });
+        try {
+          // Extract public_id from Cloudinary URL
+          // URL format: https://res.cloudinary.com/[cloud_name]/image/upload/v[version]/[folder]/[public_id].[extension]
+          const urlParts = existingResume.photoUrl.split('/');
+          const fileWithExtension = urlParts[urlParts.length - 1];
+          const folderAndFile = urlParts.slice(urlParts.indexOf('resume_photos'));
+          const publicId = folderAndFile.join('/').replace(/\.[^/.]+$/, ""); // Remove extension
+          
+          console.log("Deleting old photo with public_id:", publicId);
+          await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+          console.warn("⚠️ Failed to delete old photo:", err);
+        }
       }
 
-      const blob = await put(`resume_photo/${path.extname(photo.name)}`, photo, {
-        access: "public",
-        token: process.env.PHANGELA_MMEREKO_BLOB_READ_WRITE_TOKEN,
-        allowOverwrite: true,
-      });
+      // ✅ Upload new photo using Promise-based approach
+      try {
+        const arrayBuffer = await photo.arrayBuffer();
+        const buffer = Buffer.from(arrayBuffer);
+        const base64String = buffer.toString('base64');
+        const dataURI = `data:${photo.type};base64,${base64String}`;
 
-      newPhotoUrl = blob.url;
-      console.log("13. Photo uploaded:", newPhotoUrl);
+        const uploadResult = await cloudinary.uploader.upload(dataURI, {
+          folder: "resume_photos",
+          resource_type: "image",
+          transformation: [
+            { width: 400, height: 400, crop: "fill", quality: "auto" }
+          ]
+        });
+
+        newPhotoUrl = uploadResult.secure_url;
+        console.log("13. Photo uploaded successfully:", newPhotoUrl);
+      } catch (uploadError) {
+        console.error("❌ Photo upload failed:", uploadError);
+        throw new Error("Failed to upload photo to Cloudinary");
+      }
+
     } else if (photo === null) {
       console.log("12. Deleting existing photo...");
+      
+      // ✅ Delete existing photo from Cloudinary
       if (existingResume?.photoUrl) {
-        await del(existingResume.photoUrl, {
-          token: process.env.PHANGELA_MMEREKO_BLOB_READ_WRITE_TOKEN,
-        });
+        try {
+          const urlParts = existingResume.photoUrl.split('/');
+          const folderAndFile = urlParts.slice(urlParts.indexOf('resume_photos'));
+          const publicId = folderAndFile.join('/').replace(/\.[^/.]+$/, "");
+          
+          console.log("Deleting photo with public_id:", publicId);
+          await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+          console.warn("⚠️ Failed to delete existing photo:", err);
+        }
       }
       newPhotoUrl = null;
     }
@@ -176,20 +202,20 @@ export async function saveResume(values: ResumeValues) {
       updatedAt: new Date(),
     };
 
-    console.log("14. Final update data structure:", JSON.stringify(updateData, null, 2));
+    console.log("14. Final update data structure prepared");
 
     // ✅ Save/update in DB
+    let result;
     if (id) {
       console.log("15. Attempting to UPDATE resume...");
-      const result = await prisma.resume.update({
+      result = await prisma.resume.update({
         where: { id, userId },
         data: updateData,
       });
       console.log("16. ✅ Resume updated successfully");
-      return result;
     } else {
       console.log("15. Attempting to CREATE resume...");
-      const result = await prisma.resume.create({
+      result = await prisma.resume.create({
         data: {
           ...resumeValues,
           userId,
@@ -217,15 +243,19 @@ export async function saveResume(values: ResumeValues) {
         },
       });
       console.log("16. ✅ Resume created successfully");
-      return result;
     }
+
+    // ✅ Revalidate the path to update cached data
+    revalidatePath("/resumes");
+    
+    return result;
+
   } catch (error) {
     console.error("❌ Error in saveResume:", error);
     console.error("Error details:", JSON.stringify(error, null, 2));
     throw error;
   }
 }
-
 export async function deleteResume(id: string) {
   console.log("🔥 FUNCTION CALLED - deleteResume started");
   
@@ -243,13 +273,6 @@ export async function deleteResume(id: string) {
 
   if (!resume) {
     throw new Error("Resume not found");
-  }
-
-  // Delete photo from blob storage
-  if (resume.photoUrl) {
-    await del(resume.photoUrl, {
-      token: process.env.PHANGELA_MMEREKO_BLOB_READ_WRITE_TOKEN,
-    });
   }
 
   // Delete all related records first to avoid foreign key constraint violations

@@ -14,6 +14,7 @@ import { EditorFormProps } from "@/utils/types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useEffect, useRef } from "react";
 import { useForm } from "react-hook-form";
+import Image from "next/image";
 
 export default function PersonalInfoForm({ resumeData, setResumeData }: EditorFormProps) {
   const form = useForm<PersonalInfoValues>({
@@ -57,40 +58,110 @@ export default function PersonalInfoForm({ resumeData, setResumeData }: EditorFo
       </div>
       <Form {...form}>
         <form className="space-y-3">
-          <FormField
-            control={form.control}
-            name="photo"
-            render={({ field: { value, ...fieldValues } }) => (
-              <FormItem>
-                <FormLabel>Your Photo</FormLabel>
-                <div className="flex items-center gap-2">
-                <FormControl>
-                  <Input
-                    {...fieldValues}
-                    placeholder="Upload your photo"
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        fieldValues.onChange(file);
-                      }
-                    }}
-                    ref={photoInputRef}
-                  />
-                </FormControl>
-                <Button variant="secondary" type="button" onClick={() => {
-                  fieldValues.onChange(null);
-                  if(photoInputRef.current) photoInputRef.current.value = "";
+           <FormField
+  control={form.control}
+  name="photo"
+  render={({ field: { value, ...fieldValues } }) => (
+    <FormItem>
+      <FormLabel>Your Photo</FormLabel>
+      <div className="space-y-4">
+        {/* Current photo preview */}
+        {(value instanceof File || (typeof value === 'string' && value)) && (
+          <div className="flex items-center gap-4">
+            <div className="relative w-20 h-20 rounded-lg overflow-hidden border border-gray-200">
+              <Image
+                src={
+                  value instanceof File 
+                    ? URL.createObjectURL(value)
+                    : value // This would be the existing photo URL from database
+                }
+                alt="Profile photo preview"
+                fill
+                className="object-cover"
+                onLoad={(e) => {
+                  // Cleanup object URL after image loads to prevent memory leaks
+                  if (value instanceof File) {
+                    URL.revokeObjectURL((e.target as HTMLImageElement).src);
+                  }
+                }}
+              />
+            </div>
+            <div className="text-sm text-gray-600">
+              {value instanceof File ? (
+                <>
+                  <p className="font-medium">{value.name}</p>
+                  <p>{(value.size / 1024 / 1024).toFixed(2)} MB</p>
+                </>
+              ) : (
+                <p className="font-medium">Current photo</p>
+              )}
+            </div>
+          </div>
+        )}
+        
+        {/* File input and controls */}
+        <div className="flex items-center gap-2">
+          <FormControl>
+            <Input
+              {...fieldValues}
+              placeholder="Upload your photo (optional - only include if job requires it)"
+              type="file"
+              accept="image/*"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  // Validate file size (5MB limit)
+                  if (file.size > 5 * 1024 * 1024) {
+                    // You might want to show this error in your form
+                    console.error("File size must be less than 5MB");
+                    return;
+                  }
                   
-                }}>
-                  Remove
-                </Button>
-                </div>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+                  // Validate file type
+                  if (!file.type.startsWith('image/')) {
+                    console.error("Only image files are allowed");
+                    return;
+                  }
+                  
+                  fieldValues.onChange(file);
+                } else {
+                  fieldValues.onChange(undefined);
+                }
+              }}
+              ref={photoInputRef}
+              className="flex-1"
+            />
+          </FormControl>
+          
+          {/* Remove button - only show if there's a photo */}
+          {(value instanceof File || (typeof value === 'string' && value)) && (
+            <Button 
+              variant="secondary" 
+              type="button" 
+              onClick={() => {
+                fieldValues.onChange(null); // This will trigger deletion of existing photo
+                if (photoInputRef.current) {
+                  photoInputRef.current.value = "";
+                }
+              }}
+            >
+              Remove
+            </Button>
+          )}
+        </div>
+        
+        {/* Help text */}
+        <div className="text-xs text-gray-500 space-y-1">
+          <p>• Please only include a photo if the job requires it</p>
+          <p>• Maximum file size: 5MB</p>
+          <p>• Accepted formats: JPG, PNG, GIF, WebP</p>
+          <p>• Recommended: Square photos work best (400x400px)</p>
+        </div>
+      </div>
+      <FormMessage />
+    </FormItem>
+  )}
+/>
           <div className="grid grid-cols-2 gap-3">
             <FormField
               control={form.control}

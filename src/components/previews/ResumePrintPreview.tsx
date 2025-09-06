@@ -1,14 +1,12 @@
 import { BorderStyles } from "@/app/(main)/editor/BorderStyleButton";
-import useDimensions from "@/hooks/useDimensions";
 import { cn } from "@/lib/utils";
 import { ResumeValues } from "@/lib/validations";
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
+import { forwardRef, useEffect, useState } from "react";
 
-interface ResumePreviewProps {
+interface ResumePrintViewProps {
   resumeData: ResumeValues;
   className?: string;
-  contentRef?: React.Ref<HTMLDivElement>;
 }
 
 export const formatDate = (dateString?: string) => {
@@ -26,28 +24,19 @@ export const formatDate = (dateString?: string) => {
   }).format(date);
 };
 
-export default function ResumePreview({
-  resumeData,
-  className,
-  contentRef,
-}: ResumePreviewProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  const { width } = useDimensions(containerRef);
-
-  return (
-    <div
-      className={cn(
-        "aspect-[210/297] h-fit w-full bg-white text-black",
-        className,
-      )}
-      ref={containerRef} // Add this back for dimensions hook
-      id="resumePreviewContent"
-    >
+const ResumePrintView = forwardRef<HTMLDivElement, ResumePrintViewProps>(
+  ({ resumeData, className }, ref) => {
+    return (
       <div
-        ref={contentRef} // Move contentRef here if you still want to use this component for printing
-        className={cn("space-y-6 p-6", !width && "invisible")} // Add back the space and invisible logic
-        style={{
-          zoom: width ? width / 794 : 1, // prevent NaN
+        ref={ref}
+        className={cn(
+          "bg-white text-black p-6 space-y-6",
+          className,
+        )}
+        style={{ 
+          width: '794px', // A4 width in pixels at 96 DPI
+          minHeight: '1123px', // A4 height in pixels at 96 DPI
+          fontSize: '12px', // Ensure consistent print sizing
         }}
       >
         <PersonalInfoHeader resumeData={resumeData} />
@@ -58,13 +47,18 @@ export default function ResumePreview({
         <CertificationsSection resumeData={resumeData} />
         <AwardsSection resumeData={resumeData} />
         <ProjectsPublicationSection resumeData={resumeData} />
+        
       </div>
-    </div>
-  );
-}
+      
+    );
+  }
+);
 
-// ... rest of your section components remain the same
+ResumePrintView.displayName = "ResumePrintView";
 
+export default ResumePrintView;
+
+// Rest of your section components (copy from your existing file)
 interface ResumeSectionProps {
   resumeData: ResumeValues;
 }
@@ -103,23 +97,25 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
   }, [photo]);
 
   return (
-    <div className="flex items-center gap-6">
+    <div className="text-center space-y-4">
       {photoSrc && (
-        <Image
-          src={photoSrc}
-          width={100}
-          height={100}
-          alt="Photo"
-          className="aspect-square object-cover"
-          style={{
-            borderRadius:
-              borderStyle === BorderStyles.SQUARE
-                ? "0px"
-                : borderStyle === BorderStyles.CIRCLE
-                  ? "9999px"
-                  : "10%",
-          }}
-        />
+        <div className="flex justify-center">
+          <Image
+            src={photoSrc}
+            width={100}
+            height={100}
+            alt="Photo"
+            className="aspect-square object-cover"
+            style={{
+              borderRadius:
+                borderStyle === BorderStyles.SQUARE
+                  ? "0px"
+                  : borderStyle === BorderStyles.CIRCLE
+                    ? "9999px"
+                    : "10%",
+            }}
+          />
+        </div>
       )}
 
       <div className="space-y-2.5">
@@ -140,10 +136,10 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
           {city && country ? ", " : ""}
           {country}
         </p>
-        <p className="flex justify-between text-xs text-gray-500">
+        <div className="flex justify-center gap-8 text-xs text-gray-500">
           <span>{email}</span>
           <span>{phone}</span>
-        </p>
+        </div>
 
         <p className="text-xs text-gray-500">
           {[linkedin, github, twitter, portfolioUrl]
@@ -166,7 +162,7 @@ function SummarySection({ resumeData }: ResumeSectionProps) {
 
       <div className="break-inside-avoid space-y-3">
         <p
-          className=" text-lg font-semibold"
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Professional Summary
@@ -192,7 +188,7 @@ function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className=" text-lg font-semibold"
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Work Experience
@@ -234,7 +230,7 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className=" text-lg font-semibold"
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Education
@@ -279,7 +275,7 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className=" text-lg font-semibold"
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Skills
@@ -309,7 +305,7 @@ function CertificationsSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className=" text-lg font-semibold"
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Certifications
@@ -346,7 +342,7 @@ function AwardsSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className=" text-lg font-semibold"
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Awards
@@ -385,7 +381,7 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
 
       <div className="space-y-3">
         <p
-          className=" text-lg font-semibold"
+          className="mt-[-14px] text-lg font-semibold"
           style={{ color: colorHex }}
         >
           Projects & Publications
