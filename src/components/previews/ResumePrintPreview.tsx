@@ -1,6 +1,7 @@
 import { BorderStyles } from "@/app/(main)/editor/BorderStyleButton";
 import { cn } from "@/lib/utils";
 import { ResumeValues } from "@/lib/validations";
+import { formatDateMonthYear } from "@/utils/date-format";
 import Image from "next/image";
 import { forwardRef, useEffect, useState } from "react";
 
@@ -9,13 +10,33 @@ interface ResumePrintViewProps {
   className?: string;
 }
 
-export const formatDate = (dateString?: string) => {
-  if (!dateString) return "";
+// export const formatDate = (dateString?: string) => {
+//   if (!dateString) return "";
 
-  // If value is YYYY-MM, append `-01` to make it a valid full date
-  const normalized = dateString.length === 7 ? `${dateString}-01` : dateString;
+//   // If value is YYYY-MM, append `-01` to make it a valid full date
+//   const normalized = dateString.length === 7 ? `${dateString}-01` : dateString;
 
-  const date = new Date(normalized);
+//   const date = new Date(normalized);
+//   if (isNaN(date.getTime())) return ""; // fallback if still invalid
+
+//   return new Intl.DateTimeFormat("en-US", {
+//     month: "short",
+//     year: "numeric",
+//   }).format(date);
+// };
+export const formatDate = (dateInput?: string | Date | null) => {
+  if (!dateInput) return "";
+
+  let date: Date;
+  
+  if (dateInput instanceof Date) {
+    date = dateInput;
+  } else {
+    // Handle string input (existing logic)
+    const normalized = dateInput.length === 7 ? `${dateInput}-01` : dateInput;
+    date = new Date(normalized);
+  }
+  
   if (isNaN(date.getTime())) return ""; // fallback if still invalid
 
   return new Intl.DateTimeFormat("en-US", {
@@ -201,9 +222,9 @@ function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
             >
               <span>{exp.position}</span>
             <span>
-            {exp.startDate ? formatDate(exp.startDate) : ""}
+            {exp.startDate ? formatDateMonthYear(exp.startDate) : ""}
             {" – "}
-            {exp.endDate ? formatDate(exp.endDate) : "Present"}
+            {exp.endDate ? formatDateMonthYear(exp.endDate) : "Present"}
           </span>
             </div>
             <p className="text-xs font-semibold">{exp.company}</p>
@@ -244,9 +265,9 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
               <span>{edu.institution}</span>
               {edu.startDate && (
                 <span>
-                  {formatDate(edu.startDate)}
+                  {formatDateMonthYear(edu.startDate)}
                   {" — "}
-                  {edu.endDate ? formatDate(edu.endDate) : "Present"}
+                  {edu.endDate ? formatDateMonthYear(edu.endDate) : "Present"}
                 </span>
               )}
             </div>
@@ -346,7 +367,7 @@ function CertificationsSection({ resumeData }: ResumeSectionProps) {
               style={{ color: colorHex }}
             >
               <span>{cert.certification}</span>
-              {cert.year && <span>{formatDate(cert.year)}</span>}
+             <span>{formatDateMonthYear(cert.year)}</span>
             </div>
             <p className="text-xs font-semibold">{cert.body}</p>
           </div>
@@ -384,7 +405,7 @@ function AwardsSection({ resumeData }: ResumeSectionProps) {
             >
               <span className="font-semibold">{award.title}</span>
               
-              {award.date && <span>{formatDate(award.date)}</span>}
+             {formatDateMonthYear(award.date)}
             </div>
             <p className="text-xs font-normal">{award.description}</p>
             <div className="text-xs whitespace-pre-line font-semibold">{award.issuer}</div>
@@ -423,7 +444,7 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
             >
               <span>{pub.title}</span>
               {pub.publicationDate && (
-                <span>{formatDate(pub.publicationDate)}</span>
+                <span>{formatDateMonthYear(pub.publicationDate)}</span>
               )}
             </div>
 

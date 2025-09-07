@@ -36,13 +36,13 @@ model Resume {
   twitter      String?
   portfolioUrl String?
 
-  workExperiences     WorkExperience[]
-  educations          Education[]
-  certifications      Certification[]
-  skills              Skill[]
-  softSkills          SoftSkill[]
+  workExperiences      WorkExperience[]
+  educations           Education[]
+  certifications       Certification[]
+  skills               Skill[]
+  softSkills           SoftSkill[]
   projectsPublications ProjectsPublication[]
-  awards              Award[]
+  awards               Award[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -56,8 +56,8 @@ model WorkExperience {
   position    String?
   company     String?
   description String?
-  startDate   DateTime?
-  endDate     DateTime?
+  startDate   String?
+  endDate     String?
 
   resumeId String
   resume   Resume @relation(fields: [resumeId], references: [id])
@@ -75,8 +75,8 @@ model Education {
   qualification String?
   city          String?
   country       String?
-  startDate     DateTime?
-  endDate       DateTime?
+  startDate     String?
+  endDate       String?
 
   resumeId String
   resume   Resume @relation(fields: [resumeId], references: [id])
@@ -101,7 +101,7 @@ model Skill {
 }
 
 model SoftSkill {
-  id String @id @default(cuid())
+  id    String  @id @default(cuid())
   title String?
 
   resumeId String

@@ -111,7 +111,6 @@ export async function saveResume(values: ResumeValues) {
       if (existingResume?.photoUrl) {
         try {
           // Extract public_id from Cloudinary URL
-          // URL format: https://res.cloudinary.com/[cloud_name]/image/upload/v[version]/[folder]/[public_id].[extension]
           const urlParts = existingResume.photoUrl.split('/');
           const fileWithExtension = urlParts[urlParts.length - 1];
           const folderAndFile = urlParts.slice(urlParts.indexOf('resume_photos'));
@@ -165,143 +164,151 @@ export async function saveResume(values: ResumeValues) {
       newPhotoUrl = null;
     }
 
-    // Prepare the data for Prisma operation
-// Add this helper function at the top of your file
-const convertStringToDate = (dateString?: string): Date | null => {
-  if (!dateString || dateString.trim() === '') return null;
-  
-  // Handle YYYY-MM format by appending -01
-  const normalized = dateString.length === 7 ? `${dateString}-01` : dateString;
-  const date = new Date(normalized);
-  
-  return isNaN(date.getTime()) ? null : date;
-};
-
-// Your updated code
-const updateData = {
-  ...resumeValues,
-  ...(newPhotoUrl !== undefined && { photoUrl: newPhotoUrl }),
-  workExperiences: {
-    deleteMany: {},
-    create: workExperiences.map((exp) => ({
-      ...exp,
-      startDate: convertStringToDate(exp.startDate),
-      endDate: convertStringToDate(exp.endDate),
-    })),
-  },
-  educations: {
-    deleteMany: {},
-    create: educations.map((edu) => ({
-      ...edu,
-      startDate: convertStringToDate(edu.startDate),
-      endDate: convertStringToDate(edu.endDate),
-    })),
-  },
-  skills: {
-    deleteMany: {},
-    create: skills,
-  },
-  softSkills: {
-    deleteMany: {},
-    create: softSkills,
-  },
-  certifications: {
-    deleteMany: {},
-    create: certifications.map((cert) => ({
-      ...cert,
-      // If certifications have date fields, transform them too
-      year: convertStringToDate(cert.year),
-    })),
-  },
-  awards: {
-    deleteMany: {},
-    create: awards.map((award) => ({
-      ...award,
-      // If awards have date fields, transform them too  
-      date: convertStringToDate(award.date),
-    })),
-  },
-  projectsPublications: {
-    deleteMany: {},
-    create: projectsPublications.map((pub) => ({
-      ...pub,
-      // If publications have date fields, transform them too
-      publicationDate: convertStringToDate(pub.publicationDate),
-    })),
-  },
-  updatedAt: new Date(),
-};
-
-console.log("14. Final update data structure prepared");
-
-// ✅ Save/update in DB
-let result;
-if (id) {
-  console.log("15. Attempting to UPDATE resume...");
-  result = await prisma.resume.update({
-    where: { id, userId },
-    data: updateData,
-  });
-  console.log("16. ✅ Resume updated successfully");
-} else {
-  console.log("15. Attempting to CREATE resume...");
-  result = await prisma.resume.create({
-    data: {
+    // ✅ REMOVED convertStringToDate function - keeping dates as strings
+    const updateData = {
       ...resumeValues,
-      userId,
-      photoUrl: newPhotoUrl,
+      ...(newPhotoUrl !== undefined && { photoUrl: newPhotoUrl }),
       workExperiences: {
+        deleteMany: {},
         create: workExperiences.map((exp) => ({
           ...exp,
-          startDate: convertStringToDate(exp.startDate),
-          endDate: convertStringToDate(exp.endDate),
+          // Keep dates as strings - no conversion needed
+          startDate: exp.startDate || null,
+          endDate: exp.endDate || null,
         })),
       },
       educations: {
+        deleteMany: {},
         create: educations.map((edu) => ({
           ...edu,
-          startDate: convertStringToDate(edu.startDate),
-          endDate: convertStringToDate(edu.endDate),
+          // Keep dates as strings - no conversion needed
+          startDate: edu.startDate || null,
+          endDate: edu.endDate || null,
         })),
       },
-      skills: { create: skills },
-      softSkills: { create: softSkills },
-      certifications: { 
+      skills: {
+        deleteMany: {},
+        create: skills,
+      },
+      softSkills: {
+        deleteMany: {},
+        create: softSkills,
+      },
+      certifications: {
+        deleteMany: {},
         create: certifications.map((cert) => ({
           ...cert,
-          year: cert.year
-        }))
+          // Keep year as string - no conversion needed
+          year: cert.year || null,
+        })),
       },
-      awards: { 
+      awards: {
+        deleteMany: {},
         create: awards.map((award) => ({
           ...award,
-          date: award.date,
-        }))
+          // Keep date as string - no conversion needed
+          date: award.date || null,
+        })),
       },
-      projectsPublications: { 
+      projectsPublications: {
+        deleteMany: {},
         create: projectsPublications.map((pub) => ({
           ...pub,
-          publicationDate: pub.publicationDate,
-        }))
+          // Keep publication date as string - no conversion needed
+          publicationDate: pub.publicationDate || null,
+        })),
       },
-      createdAt: new Date(),
-      updatedAt: new Date(),
-    },
-  });
-  console.log("16. ✅ Resume created successfully");
-}
+      updatedAt: new Date(), // Only system timestamps remain as Date objects
+    };
 
-// ✅ Revalidate the path to update cached data
-revalidatePath("/resumes");
+    console.log("14. Final update data structure prepared");
 
-return result;
+    // ✅ Save/update in DB
+    const includeOptions = {
+      workExperiences: true,
+      educations: true,
+      skills: true,
+      softSkills: true,
+      certifications: true,
+      awards: true,
+      projectsPublications: true,
+    };
 
+    let result;
+    if (id) {
+      console.log("15. Attempting to UPDATE resume...");
+      result = await prisma.resume.update({
+        where: { id, userId },
+        data: updateData,
+        include: includeOptions,
+      });
+      console.log("16. ✅ Resume updated successfully");
+    } else {
+      console.log("15. Attempting to CREATE resume...");
+      result = await prisma.resume.create({
+        data: {
+          ...resumeValues,
+          userId,
+          photoUrl: newPhotoUrl,
+          workExperiences: {
+            create: workExperiences.map((exp) => ({
+              ...exp,
+              // Keep dates as strings - no conversion needed
+              startDate: exp.startDate || null,
+              endDate: exp.endDate || null,
+            })),
+          },
+          educations: {
+            create: educations.map((edu) => ({
+              ...edu,
+              // Keep dates as strings - no conversion needed
+              startDate: edu.startDate || null,
+              endDate: edu.endDate || null,
+            })),
+          },
+          skills: { create: skills },
+          softSkills: { create: softSkills },
+          certifications: { 
+            create: certifications.map((cert) => ({
+              ...cert,
+              // Keep year as string - no conversion needed
+              year: cert.year || null,
+            }))
+          },
+          awards: { 
+            create: awards.map((award) => ({
+              ...award,
+              // Keep date as string - no conversion needed
+              date: award.date || null,
+            }))
+          },
+          projectsPublications: { 
+            create: projectsPublications.map((pub) => ({
+              ...pub,
+              // Keep publication date as string - no conversion needed
+              publicationDate: pub.publicationDate || null,
+            }))
+          },
+          createdAt: new Date(), // Only system timestamps remain as Date objects
+          updatedAt: new Date(),
+        },
+        include: includeOptions,
+      });
+      console.log("16. ✅ Resume created successfully");
+    }
+
+    // ✅ Revalidate the path to update cached data
+    revalidatePath("/resumes");
+
+    return result;
   } catch (error) {
     console.error("❌ Error in saveResume:", error);
     console.error("Error details:", JSON.stringify(error, null, 2));
     throw error;
   }
 }
+
+
 export async function deleteResume(id: string) {
   console.log("🔥 FUNCTION CALLED - deleteResume started");
   

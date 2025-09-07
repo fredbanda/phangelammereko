@@ -2,6 +2,7 @@ import { BorderStyles } from "@/app/(main)/editor/BorderStyleButton";
 import useDimensions from "@/hooks/useDimensions";
 import { cn } from "@/lib/utils";
 import { ResumeValues } from "@/lib/validations";
+import { formatDateMonthYear } from "@/utils/date-format";
 import Image from "next/image";
 import { useEffect, useRef, useState } from "react";
 
@@ -19,18 +20,31 @@ export const formatDate = (dateInput?: string | Date | null) => {
   if (dateInput instanceof Date) {
     date = dateInput;
   } else {
-    // Handle string input (existing logic)
-    const normalized = dateInput.length === 7 ? `${dateInput}-01` : dateInput;
+    // Handle various string formats
+    let normalized = dateInput;
+    // If it's YYYY-MM format, add day
+    if (/^\d{4}-\d{2}$/.test(dateInput)) {
+      normalized = `${dateInput}-01`;
+    }
+    // If it's just YYYY format, add month and day
+    if (/^\d{4}$/.test(dateInput)) {
+      normalized = `${dateInput}-01-01`;
+    }
     date = new Date(normalized);
   }
   
-  if (isNaN(date.getTime())) return ""; // fallback if still invalid
+  if (isNaN(date.getTime())) {
+    console.warn('Invalid date:', dateInput);
+    return "Invalid Date"; // More helpful than empty string for debugging
+  }
 
   return new Intl.DateTimeFormat("en-US", {
     month: "short",
     year: "numeric",
   }).format(date);
 };
+
+
 export default function ResumePreview({
   resumeData,
   className,
@@ -182,6 +196,7 @@ function SummarySection({ resumeData }: ResumeSectionProps) {
   );
 }
 
+// 2. Enhanced WorkExperienceSection with better date handling
 function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
   const { workExperiences, colorHex, borderStyle } = resumeData;
 
@@ -189,17 +204,14 @@ function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
     (exp) => Object.values(exp).filter(Boolean).length > 0,
   );
 
-  if (!workExperiencesNotEmpty) return null;
+  if (!workExperiencesNotEmpty?.length) return null;
 
   return (
     <>
-      <hr className="border-1 dark:border-gray-600" style={{ color: borderStyle }} />
+      <hr className="border-1 dark:border-gray-600" style={{ borderColor: borderStyle }} />
 
       <div className="space-y-3">
-        <p
-          className=" text-lg font-semibold"
-          style={{ color: colorHex }}
-        >
+        <p className="text-lg font-semibold" style={{ color: colorHex }}>
           Work Experience
         </p>
         {workExperiencesNotEmpty.map((exp, index) => (
@@ -209,11 +221,11 @@ function WorkExperienceSection({ resumeData }: ResumeSectionProps) {
               style={{ color: colorHex }}
             >
               <span>{exp.position}</span>
-            <span>
-            {exp.startDate ? formatDate(exp.startDate) : ""}
-            {" – "}
-            {exp.endDate ? formatDate(exp.endDate) : "Present"}
-          </span>
+              <span>
+                {exp.startDate ? formatDateMonthYear(exp.startDate) : ""}
+                {exp.startDate && " – "}
+                {exp.endDate ? formatDateMonthYear(exp.endDate) : (exp.startDate ? "Present" : "")}
+              </span>
             </div>
             <p className="text-xs font-semibold">{exp.company}</p>
             <div className="text-xs whitespace-pre-line">{exp.description}</div>
@@ -253,9 +265,9 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
               <span>{edu.institution}</span>
               {edu.startDate && (
                 <span>
-                  {formatDate(edu.startDate)}
+                  {formatDateMonthYear(edu.startDate)}
                   {" — "}
-                  {edu.endDate ? formatDate(edu.endDate) : "Present"}
+                  {edu.endDate ? formatDateMonthYear(edu.endDate) : "Present"}
                 </span>
               )}
             </div>
@@ -302,31 +314,42 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
 function SoftSkillsSection({ resumeData }: ResumeSectionProps) {
   const { softSkills, colorHex } = resumeData;
 
+  // Add debugging
+  console.log('Raw softSkills data:', softSkills);
+
   const softSkillsNotEmpty = softSkills?.filter(
-    (soft) => Object.values(soft).filter(Boolean).length > 0,
+    (soft) => {
+      // More explicit filtering
+      const hasValidData = soft && (soft.title);
+      console.log('Soft skill item:', soft, 'hasValidData:', hasValidData);
+      return hasValidData;
+    }
   );
-  if (!softSkillsNotEmpty) return null;
+
+  console.log('Filtered softSkills:', softSkillsNotEmpty);
+
+  if (!softSkillsNotEmpty?.length) return null;
 
   return (
     <>
       <hr className="border-1 dark:border-gray-600" />
-
       <div className="space-y-3">
-        <p
-          className=" text-lg font-semibold"
-          style={{ color: colorHex }}
-        >
+        <p className="text-lg font-semibold" style={{ color: colorHex }}>
           Soft Skills
         </p>
         {softSkillsNotEmpty.map((soft, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
-            <p className="text-xs font-normal">{soft.title}</p>
+            {/* Handle different possible property names */}
+            <p className="text-xs font-normal">
+              {soft.title || soft.title || soft.title || 'Unnamed Skill'}
+            </p>
           </div>
         ))}
       </div>
     </>
   );
 }
+
 
 function CertificationsSection({ resumeData }: ResumeSectionProps) {
   const { certifications, colorHex } = resumeData;
@@ -355,7 +378,7 @@ function CertificationsSection({ resumeData }: ResumeSectionProps) {
               style={{ color: colorHex }}
             >
               <span>{cert.certification}</span>
-              {cert.year && <span>{(cert.year)}</span>}
+              {formatDateMonthYear(cert.year)}
             </div>
             <p className="text-xs font-semibold">{cert.body}</p>
           </div>
@@ -393,7 +416,7 @@ function AwardsSection({ resumeData }: ResumeSectionProps) {
             >
               <span className="font-semibold">{award.title}</span>
               
-              {award.date && <span>{formatDate(award.date)}</span>}
+              {formatDateMonthYear(award.date)}
             </div>
             <p className="text-xs font-normal">{award.description}</p>
             <div className="text-xs whitespace-pre-line font-semibold">{award.issuer}</div>
@@ -431,9 +454,7 @@ function ProjectsPublicationSection({ resumeData }: ResumeSectionProps) {
               style={{ color: colorHex }}
             >
               <span>{pub.title}</span>
-              {pub.publicationDate && (
-                <span>{formatDate(pub.publicationDate)}</span>
-              )}
+              {formatDateMonthYear(pub.publicationDate)}
             </div>
 
             <div className="text-xs whitespace-pre-line">

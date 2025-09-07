@@ -101,6 +101,7 @@ Requirements:
 - If possible include a short description of each skill about 3 to 5 words please like Leadership: guides, mentors, and inspires
 - Format as bulleted list with no headings or subheadings please use a big dot (•) for each point
 - Examples: "Team Leadership", "Problem Solving", "Communication", "Time Management", "Adaptability"
+- Do not use * like this **Strategic Thinking** or like this *Strategic Thinking*
 
 Generate SOFT SKILLS based on the work experiences provided above.
 `);

@@ -1,8 +1,8 @@
 "use client";
 
-import Image from 'next/image';
-import Support from '../../../../public/resume.png';
-import { useState } from 'react';
+import Image from "next/image";
+import Support from "../../../../public/resume.png";
+import { useState } from "react";
 
 export default function SupportPage() {
     const [amount, setAmount] = useState(50); // default amount
@@ -10,12 +10,20 @@ export default function SupportPage() {
 
   const presetAmounts = [10, 50, 100, 500, 1000];
 
-  const handleSubmit = () => {
-    
+  const handleSubmit = (e) => {
+    e.preventDefault();
     console.log("Donation Amount:", amount);
     console.log("Payment Method:", paymentMethod);
+  };
 
-  };    
+  const handleAmountChange = (e) => {
+    const value = e.target.value;
+    // Allow empty string or valid numbers
+    if (value === '' || !isNaN(value)) {
+      setAmount(value === '' ? '' : Number(value));
+    }
+  };
+    
   return (
     <>
       <section className="bg-[#C2EFD4]  flex items-center">
@@ -88,9 +96,10 @@ export default function SupportPage() {
                     <input
                       type="number"
                       value={amount}
-                      onChange={(e) => setAmount(Number(e.target.value))}
+                      onChange={(e) => setAmount(e.target.value)}
                       placeholder="Other amount"
                       className="w-full pl-14 pr-6 py-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xl"
+                      min="1"
                       required
                     />
                   </div>
