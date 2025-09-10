@@ -6,10 +6,11 @@ import { auth } from "@clerk/nextjs/server";
 import { ProfileAnalyzer } from "@/lib/analysis/profile-analyzer";
 import { Prisma } from "@prisma/client";
 
+// Updated interface for Next.js 15 - params is now a Promise
 interface AnalysisPageProps {
-  params: {
+  params: Promise<{
     profileId: string;
-  };
+  }>;
 }
 
 // Define the expected type for ProfileAnalyzer input
@@ -39,6 +40,7 @@ interface ProfileInput {
 }
 
 export default async function AnalysisPage({ params }: AnalysisPageProps) {
+  // Await the params Promise to get the actual parameters
   const { profileId } = await params;
   const { userId } = await auth();
 
@@ -148,7 +150,7 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
         },
       });
 
-      // Update profile with analysis timestamp and score (removed duplicate)
+      // Update profile with analysis timestamp and score
       await prisma.linkedinProfile.update({
         where: { id: profileId },
         data: {

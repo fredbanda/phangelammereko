@@ -9,13 +9,10 @@ export async function GET() {
         createdAt: "desc",
       },
       include: {
-        profile: {
-          select: {
-            fullName: true,
-            headline: true,
-          },
-        },
-      },
+        user: true,
+        linkedinProfile: true,
+        
+      }
     })
 
     return NextResponse.json(recentReports)

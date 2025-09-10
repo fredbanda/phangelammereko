@@ -10,18 +10,14 @@ export default function SupportPage() {
 
   const presetAmounts = [10, 50, 100, 500, 1000];
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
+  const handleSubmit = () => {
+   
     console.log("Donation Amount:", amount);
     console.log("Payment Method:", paymentMethod);
   };
 
-  const handleAmountChange = (e) => {
-    const value = e.target.value;
-    // Allow empty string or valid numbers
-    if (value === '' || !isNaN(value)) {
-      setAmount(value === '' ? '' : Number(value));
-    }
+  const handleAmountChange = () => {
+ 
   };
     
   return (
@@ -96,7 +92,7 @@ export default function SupportPage() {
                     <input
                       type="number"
                       value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
+                    
                       placeholder="Other amount"
                       className="w-full pl-14 pr-6 py-4 border-2 border-gray-300 rounded-lg focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500 text-xl"
                       min="1"

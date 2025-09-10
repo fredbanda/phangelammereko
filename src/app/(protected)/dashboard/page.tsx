@@ -13,11 +13,16 @@ async function DashboardStats() {
       cache: "no-store",
     })
 
+    console.log(response)
+    
+
     if (!response.ok) {
       throw new Error("Failed to fetch stats")
     }
 
     const stats = await response.json()
+    console.log(stats);
+    
 
     return (
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

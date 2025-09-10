@@ -66,13 +66,14 @@ export async function GET(request: Request, profile: unknown) {
       where: whereClause,
       orderBy,
       include: {
-        profile: {
-            select: {
-              fullName: true,
-              headline: true,
-            },
+        user: {
+          select: {
+            name: true,
+            email: true,
+          },
+          
         }
-      },
+      }
     })
 
     return NextResponse.json(reports)

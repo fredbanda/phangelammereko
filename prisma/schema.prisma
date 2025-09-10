@@ -17,6 +17,20 @@ model User {
   id        String   @id
   email     String   @unique
   name      String?
+  firstName String?
+  lastName  String?
+  phone     String?
+  photoUrl  String?
+  address   String?
+  location  String?
+  city      String?
+  country   String?
+  jobTitle  String?
+  linkedin  String?
+  github    String?
+  twitter   String?
+  portfolioUrl String?
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

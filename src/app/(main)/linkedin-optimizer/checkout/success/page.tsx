@@ -8,13 +8,14 @@ import Link from "next/link"
 import prisma from "@/utils/prisma"
 
 interface SuccessPageProps {
-  searchParams: {
+  searchParams?: Promise<{
     orderId?: string
-  }
+  }>;
 }
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
-  const { orderId } = searchParams
+  const resolvedSearchParams = await searchParams
+  const orderId  = resolvedSearchParams?.orderId
 
   if (!orderId) {
     notFound()

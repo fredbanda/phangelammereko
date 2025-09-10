@@ -7,7 +7,7 @@ export async function POST() {
     const unassignedOrders = await prisma.consultationOrder.findMany({
       where: {
         consultantId: null,
-        status: "PENDING",
+        consultationStatus: "PENDING",
       },
       include: {
         user: true,
@@ -27,7 +27,7 @@ export async function POST() {
           select: {
             consultationOrders: {
               where: {
-                status: "IN_PROGRESS",
+                consultationStatus: "IN_PROGRESS",
               },
             },
           },
@@ -64,7 +64,7 @@ export async function POST() {
         where: { id: order.id },
         data: {
           consultantId: bestConsultant.id,
-          status: "IN_PROGRESS",
+          consultationStatus: "IN_PROGRESS",
         },
       })
 

@@ -8,7 +8,7 @@ export async function GET(request: NextRequest) {
       include: {
         consultationOrders: {
           select: {
-            status: true,
+            consultationStatus: true,
             amount: true,
           },
         },
@@ -16,7 +16,7 @@ export async function GET(request: NextRequest) {
           select: {
             consultationOrders: {
               where: {
-                status: "IN_PROGRESS",
+                consultationStatus: "IN_PROGRESS",
               },
             },
           },
@@ -26,9 +26,9 @@ export async function GET(request: NextRequest) {
 
     const performance = consultants.map((consultant) => {
       const orders = consultant.consultationOrders
-      const completedOrders = orders.filter((o) => o.status === "COMPLETED").length
+      const completedOrders = orders.filter((o) => o.consultationStatus === "COMPLETED").length
       const totalOrders = orders.length
-      const revenue = orders.filter((o) => o.status === "COMPLETED").reduce((sum, o) => sum + o.amount, 0)
+      const revenue = orders.filter((o) => o.consultationStatus === "COMPLETED").reduce((sum, o) => sum + o.amount, 0)
 
       return {
         id: consultant.id,

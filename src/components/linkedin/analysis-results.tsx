@@ -43,6 +43,7 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
 
   const [loading, setLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
 
   const getScoreLabel = (score: number) => {
     if (score >= 80) return "Excellent";
@@ -55,20 +56,122 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
   const structureAnalysis = report.structureAnalysis as any;
   const readabilityScore = report.readabilityScore as any;
 
-  async function handlePremiumClick(priceId: string) {
+  // async function handlePremiumClick(priceId: string) {
+  //   try {
+  //     setLoading(true);
+  //     const sessionUrl = await createCheckoutSession(priceId);
+  //     window.location.href = sessionUrl;
+  //   } catch (error) {
+  //     console.log(error);
+  //     toast.error("Something went wrong while creating the checkout session", {
+  //       position: "top-right",
+  //     });
+  //   } finally {
+  //     setLoading(false);
+  //   }
+  // }
+
+  const handlePaymentSubmit = async (priceId: string) => {
+    setIsSubmitting(true)
+  
     try {
-      setLoading(true);
-      const sessionUrl = await createCheckoutSession(priceId);
-      window.location.href = sessionUrl;
+      // Combine all form data
+      // const orderData = {
+      //   personalInfo: personalForm.getValues(),
+      //   requirements: requirementsForm.getValues(),
+      //   payment: data,
+      //   amount: 200000, // R2000 in cents
+      //   currency: "ZAR",
+      //   status: 'pending' // Add status field
+      // }
+  
+      // First, save the order data to database
+      const response = await fetch("/api/linkedin/create-order", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(priceId),
+      })
+  
+      if (!response.ok) {
+        throw new Error("Failed to create order")
+      }
+  
+      const result = await response.json()
+      const orderId = result.orderId
+  
+      // Then redirect to Stripe with the order ID
+      const sessionUrl = await createCheckoutSession(
+        process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!,
+        //orderId! // Pass order ID to Stripe metadata
+      )
+      
+      window.location.href = sessionUrl
+      
     } catch (error) {
-      console.log(error);
-      toast.error("Something went wrong while creating the checkout session", {
+      console.error(error)
+      toast.error("Failed to process order")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function handleDownloadPDF() {
+    console.log("handleDownloadPDF clicked");
+    
+    try {
+      setIsDownloading(true);
+
+      console.log(report);
+      
+      
+      // Make request to your API endpoint
+      const response = await fetch(`/api/linkedin/download-report/pdf?reportId=${report.id}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/pdf',
+        },
+      });
+
+      if (!response.ok) {
+        throw new Error('Failed to generate PDF report');
+      }
+
+      // Get the PDF blob
+      const blob = await response.blob();
+      
+      // Create download link
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `linkedin-analysis-report-${report.id}.pdf`;
+
+      console.log(link);
+      
+      
+      // Trigger download
+      document.body.appendChild(link);
+      link.click();
+      
+      // Cleanup
+      link.remove();
+      window.URL.revokeObjectURL(url);
+      
+      toast.success("PDF report downloaded successfully!", {
+        position: "top-right",
+      });
+
+    } catch (error) {
+      console.error('Download error:', error);
+      toast.error("Failed to download PDF report. Please try again.", {
         position: "top-right",
       });
     } finally {
-      setLoading(false);
+      setIsDownloading(false);
     }
   }
+
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -670,9 +773,7 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
                 size="lg"
                 className="px-8"
                 onClick={() =>
-                  handlePremiumClick(
-                    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!,
-                  )
+                  handlePaymentSubmit
                 }
                 type="submit"
                 disabled={isSubmitting}
@@ -680,16 +781,19 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
                 Get Professional Optimization - R2,000
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button variant="outline" size="lg">
+              <Button 
+              onClick={() => handleDownloadPDF()}
+              variant="outline" size="lg">
                 <Download className="mr-2 h-4 w-4" />
                 Download Report PDF
               </Button>
             </div>
 
             <Alert>
-              <AlertTriangle className="h-4 w-4" />
+              <AlertTriangle className="h-4 w-4  text-red-700" />
+
               <AlertDescription>
-                <strong>Limited Time:</strong> Book your consultation within 7
+                <strong className="text-red-500">Limited Time:</strong> Book your consultation within 7
                 days and receive a free LinkedIn banner design worth R500!
               </AlertDescription>
             </Alert>
