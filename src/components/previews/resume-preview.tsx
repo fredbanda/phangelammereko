@@ -73,8 +73,8 @@ export default function ResumePreview({
         <SummarySection resumeData={resumeData} />
         <WorkExperienceSection resumeData={resumeData} />
         <EducationSection resumeData={resumeData} />
-        <SkillsSection resumeData={resumeData} />
         <SoftSkillsSection resumeData={resumeData} />
+        <SkillsSection resumeData={resumeData} />
         <CertificationsSection resumeData={resumeData} />
         <AwardsSection resumeData={resumeData} />
         <ProjectsPublicationSection resumeData={resumeData} />
@@ -150,6 +150,10 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
           <p className="font-medium" style={{ color: colorHex }}>
             {jobTitle}
           </p>
+                  <p className=" text-xs text-gray-500">
+          {[email, phone].filter(Boolean).join(" | ")}
+        </p>
+
         </div>
         <p className="text-xs text-gray-500 font-semibold">
           {address}
@@ -159,9 +163,6 @@ function PersonalInfoHeader({ resumeData }: ResumeSectionProps) {
           {city}
           {city && country ? ", " : ""}
           {country}
-        </p>
-        <p className=" text-xs text-gray-500">
-          {[email, phone].filter(Boolean).join(" | ")}
         </p>
 
         <p className="text-xs text-gray-500">

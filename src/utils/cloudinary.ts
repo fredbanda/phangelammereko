@@ -6,4 +6,10 @@ cloudinary.config({
   api_secret: process.env.CLOUDINARY_API_SECRET,
 });
 
+console.log("🚀 Cloudinary connection established");
+
+
+// Enhanced debugging
+// Test connection functi
+
 export default cloudinary;

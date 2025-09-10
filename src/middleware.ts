@@ -7,12 +7,12 @@ const isProtectedRoute = createRouteMatcher([
   "/jobs/create(.*)",
   "/jobs/edit(.*)",
   "/billing(.*)",
-
+  "/api/linkedin/analyze(.*)", // Add the API route
 ]);
 
 export default clerkMiddleware(async (auth, req) => {
   if (isProtectedRoute(req)) {
-    await auth.protect();
+    await auth.protect(); // Enforce authentication for protected routes
   }
 });
 

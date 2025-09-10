@@ -18,12 +18,12 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image src={Logo} alt="Logo" width={30} height={30} />
-          <span className="text-xl font-bold hidden md:block">Phangela Mmereko</span>
+          <span className="text-xl font-bold hidden md:block">SebenzaMmereko</span>
         </Link>
 
         {/* Desktop Links */}
         <div className="hidden md:flex gap-6 items-center text-black dark:text-white">
-          <Link href="/editor">Create Resume</Link>
+          <Link href="/resumes">Create Resume</Link>
           <Link href="/resumes">Dashboard</Link>
           <Link href="/vacancies">Current Vacancies</Link>
           <Link href="/jobs/create">Post A Job</Link>

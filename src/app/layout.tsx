@@ -6,6 +6,7 @@ import { ThemeProvider } from "next-themes";
 import Navbar from "@/components/headers/navbar";
 import { Toaster } from "sonner";
 import Footer from "@/components/headers/Footer";
+import PremiumModal from "@/components/premium/PremiumModal";
 
 const inter = Inter({
   subsets: ["latin"],
@@ -14,8 +15,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s - Phangela Mmereko",
-    absolute: "Phangela Mmereko",
+    template: "%s - Sebenza Mmereko",
+    absolute: "SebenzaMmereko",
   },
   description:
     "Looking for a job is hard but creating your CVs shouldn&pos;t be",
@@ -39,6 +40,7 @@ export default function RootLayout({
           >
             <Navbar />
             {children}
+            <PremiumModal />
             <Toaster richColors />
             <Footer />
           </ThemeProvider>

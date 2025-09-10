@@ -127,7 +127,7 @@ Generate SOFT SKILLS based on the work experiences provided above.
     }
   };
 
-  const generatingSingleSkillithAI = async (index: number) => {
+  const generateSingleSoftSkillWithAI = async (index: number) => {
     setSoftSkillLoading((prevState) => ({ ...prevState, [index]: true }));
     
     const currentValues = form.getValues();
@@ -233,7 +233,7 @@ Enhanced soft skill:
               index={index}
               form={form}
               remove={remove}
-              onEnhanceWithAI={generatingSingleSkillithAI}
+              onEnhanceWithAI={generateSingleSoftSkillWithAI}
               isEnhancing={softSkillLoading[index] || false}
             />
           ))}

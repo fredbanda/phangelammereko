@@ -156,3 +156,75 @@ export const generateSummarySchema = z.object({
 })
 
 export type GenerateSummaryInput = z.infer<typeof generateSummarySchema>
+
+export const LinkedinExperienceSchema = z.object({
+  title: z.string().min(1, "Job title is required"),
+  company: z.string().min(1, "Company is required"),
+  location: z.string().optional().or(z.literal("")),
+  startDate: z.string().min(1, "Start date is required"),
+  endDate: z.string().optional().or(z.literal("")),
+  current: z.boolean(),
+  description: z.string().optional().or(z.literal("")),
+})
+
+// ✅ Education Schema
+export const LinkedinEducationSchema = z.object({
+  school: z.string().min(1, "School/University is required"),
+  degree: z.string().optional().or(z.literal("")),
+  field: z.string().optional().or(z.literal("")),
+  startYear: z.string().optional().or(z.literal("")),
+  endYear: z.string().optional().or(z.literal("")),
+})
+
+// ✅ Main Profile Input Schema
+export const LinkedinProfileInputSchema = z.object({
+  headline: z.string().min(1, "Headline is required"),
+  summary: z.string().optional().or(z.literal("")),
+  location: z.string().optional().or(z.literal("")),
+  industry: z.string().optional().or(z.literal("")),
+  experiences: z.array(LinkedinExperienceSchema).min(1, "At least one experience is required"),
+  education: z.array(LinkedinEducationSchema),
+  skills: z.array(z.string()),
+  profileUrl: z.union([
+    z.string().url("Please enter a valid URL"),
+    z.literal("")
+  ]).optional(),
+})
+
+// ✅ Type Inference
+export type LinkedinProfileInput = z.infer<typeof LinkedinProfileInputSchema>
+export type LinkedinExperience = z.infer<typeof LinkedinExperienceSchema>
+export type LinkedinEducation = z.infer<typeof LinkedinEducationSchema>
+
+// Analysis Result Types
+export interface KeywordAnalysis {
+  missingKeywords: string[]
+  underusedKeywords: string[]
+  industryKeywords: string[]
+  suggestions: string[]
+}
+
+export interface StructureAnalysis {
+  hasHeadline: boolean
+  hasSummary: boolean
+  hasExperience: boolean
+  hasSkills: boolean
+  hasEducation: boolean
+  completenessScore: number
+}
+
+export interface ReadabilityAnalysis {
+  sentenceCount: number
+  avgSentenceLength: number
+  activeVerbCount: number
+  metricsCount: number
+  jargonScore: number
+  readabilityScore: number
+}
+
+export interface OptimizationSuggestion {
+  type: "headline" | "summary" | "experience" | "skills"
+  priority: "high" | "medium" | "low"
+  suggestion: string
+  example?: string
+}

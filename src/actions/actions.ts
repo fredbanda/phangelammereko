@@ -1,10 +1,11 @@
 "use server";
 
 import { resumeSchema, ResumeValues } from "@/lib/validations";
+import cloudinary from "@/utils/cloudinary";
 import prisma from "@/utils/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { revalidatePath } from "next/cache";
-import cloudinary from "@/utils/cloudinary";
+
 
 export async function saveResume(values: ResumeValues) {
   console.log("🔥 FUNCTION CALLED - saveResume started");
@@ -102,68 +103,144 @@ export async function saveResume(values: ResumeValues) {
     if (id && !existingResume) throw new Error("Resume not found");
 
     // ✅ Handle photo upload/deletion with Cloudinary
+
+
+// At the start of your upload process:
+console.log("Testing Cloudinary connection...");
+
+
     let newPhotoUrl: string | undefined | null = undefined;
 
-    if (photo instanceof File) {
-      console.log("12. Processing photo upload...");
+   if (photo instanceof File) {
+  console.log("12. Processing photo upload...");
+  
+  // File validation with 4MB limit
+  const maxSizeBytes = 1024 * 1024 * 4; // 4MB
+  const fileSizeMB = photo.size / (1024 * 1024);
+  
+  console.log("Photo validation:", {
+    name: photo.name,
+    size: `${fileSizeMB.toFixed(2)}MB`,
+    sizeBytes: photo.size,
+    maxAllowed: `${(maxSizeBytes / 1024 / 1024).toFixed(0)}MB`,
+    type: photo.type,
+    withinLimit: photo.size <= maxSizeBytes
+  });
 
-      // ✅ Delete old photo if exists
-      if (existingResume?.photoUrl) {
-        try {
-          // Extract public_id from Cloudinary URL
-          const urlParts = existingResume.photoUrl.split('/');
-          const fileWithExtension = urlParts[urlParts.length - 1];
-          const folderAndFile = urlParts.slice(urlParts.indexOf('resume_photos'));
-          const publicId = folderAndFile.join('/').replace(/\.[^/.]+$/, ""); // Remove extension
-          
-          console.log("Deleting old photo with public_id:", publicId);
-          await cloudinary.uploader.destroy(publicId);
-        } catch (err) {
-          console.warn("⚠️ Failed to delete old photo:", err);
-        }
-      }
+  // Size validation
+  if (photo.size > maxSizeBytes) {
+    throw new Error(`Photo too large: ${fileSizeMB.toFixed(1)}MB. Maximum allowed size is 4MB. Please compress or resize your image.`);
+  }
 
-      // ✅ Upload new photo using Promise-based approach
-      try {
-        const arrayBuffer = await photo.arrayBuffer();
-        const buffer = Buffer.from(arrayBuffer);
-        const base64String = buffer.toString('base64');
-        const dataURI = `data:${photo.type};base64,${base64String}`;
+  // Type validation
+  const allowedTypes = ['image/jpeg', 'image/jpg', 'image/png', 'image/webp'];
+  if (!allowedTypes.includes(photo.type)) {
+    throw new Error(`Invalid file type: ${photo.type}. Allowed types: ${allowedTypes.join(', ')}`);
+  }
 
-        const uploadResult = await cloudinary.uploader.upload(dataURI, {
-          folder: "resume_photos",
-          resource_type: "image",
-          transformation: [
-            { width: 400, height: 400, crop: "fill", quality: "auto" }
-          ]
-        });
+  console.log("✅ Photo validation passed");
 
-        newPhotoUrl = uploadResult.secure_url;
-        console.log("13. Photo uploaded successfully:", newPhotoUrl);
-      } catch (uploadError) {
-        console.error("❌ Photo upload failed:", uploadError);
-        throw new Error("Failed to upload photo to Cloudinary");
-      }
-
-    } else if (photo === null) {
-      console.log("12. Deleting existing photo...");
+  // Delete old photo logic...
+  if (existingResume?.photoUrl) {
+    try {
+      const urlParts = existingResume.photoUrl.split('/');
+      const fileWithExtension = urlParts[urlParts.length - 1];
+      const folderAndFile = urlParts.slice(urlParts.indexOf('resume_photos'));
+      const publicId = folderAndFile.join('/').replace(/\.[^/.]+$/, "");
       
-      // ✅ Delete existing photo from Cloudinary
-      if (existingResume?.photoUrl) {
-        try {
-          const urlParts = existingResume.photoUrl.split('/');
-          const folderAndFile = urlParts.slice(urlParts.indexOf('resume_photos'));
-          const publicId = folderAndFile.join('/').replace(/\.[^/.]+$/, "");
-          
-          console.log("Deleting photo with public_id:", publicId);
-          await cloudinary.uploader.destroy(publicId);
-        } catch (err) {
-          console.warn("⚠️ Failed to delete existing photo:", err);
-        }
-      }
-      newPhotoUrl = null;
+      console.log("Deleting old photo with public_id:", publicId);
+      await cloudinary.uploader.destroy(publicId);
+      console.log("✅ Old photo deleted");
+    } catch (err) {
+      console.warn("⚠️ Failed to delete old photo:", err);
     }
+  }
 
+  // Upload new photo
+  try {
+    console.log("📤 Converting file to base64...");
+    const conversionStart = Date.now();
+    
+    const arrayBuffer = await photo.arrayBuffer();
+    const buffer = Buffer.from(arrayBuffer);
+    const base64String = buffer.toString('base64');
+    const dataURI = `data:${photo.type};base64,${base64String}`;
+    
+    const conversionTime = Date.now() - conversionStart;
+    console.log(`✅ Conversion complete in ${conversionTime}ms`);
+
+    console.log("🚀 Starting Cloudinary upload...");
+    const uploadStart = Date.now();
+
+    // Properly typed timeout wrapper
+    const uploadWithTimeout = <T>(promise: Promise<T>, ms: number = 30000): Promise<T> => {
+      const timeout = new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error(`Upload timeout after ${ms}ms`)), ms)
+      );
+      return Promise.race([promise, timeout]);
+    };
+
+    const uploadResult = await uploadWithTimeout(
+      cloudinary.uploader.upload(dataURI, {
+        folder: "resume_photos",
+        resource_type: "image",
+        transformation: [
+          { width: 400, height: 400, crop: "fill", quality: "auto" }
+        ],
+        timeout: 60000,
+        invalidate: true,
+        overwrite: true
+      }),
+      45000 // 45 second timeout
+    );
+
+    const uploadTime = Date.now() - uploadStart;
+    console.log(`✅ Upload successful in ${uploadTime}ms:`, uploadResult.secure_url);
+
+    newPhotoUrl = uploadResult.secure_url;
+
+  } catch (error: unknown) {
+    // Properly handle unknown error type
+    const uploadError = error as Error & {
+      http_code?: number;
+      api_error_message?: string;
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      error?: any;
+    };
+
+    console.error("❌ Upload failed:", {
+      message: uploadError.message,
+      name: uploadError.name,
+      http_code: uploadError.http_code,
+      api_error_message: uploadError.api_error_message
+    });
+
+    if (uploadError.message?.includes('timeout')) {
+      throw new Error("Upload timed out. Please try again or use a smaller image.");
+    }
+    
+    throw new Error(`Photo upload failed: ${uploadError.message || 'Unknown error'}`);
+  }
+
+} else if (photo === null) {
+  console.log("12. Deleting existing photo...");
+  
+  if (existingResume?.photoUrl) {
+    try {
+      const urlParts = existingResume.photoUrl.split('/');
+      const folderAndFile = urlParts.slice(urlParts.indexOf('resume_photos'));
+      const publicId = folderAndFile.join('/').replace(/\.[^/.]+$/, "");
+      
+      console.log("Deleting photo with public_id:", publicId);
+      await cloudinary.uploader.destroy(publicId);
+      console.log("✅ Photo deleted");
+    } catch (err: unknown) {
+      const error = err as Error;
+      console.warn("⚠️ Failed to delete existing photo:", error.message);
+    }
+  }
+  newPhotoUrl = null;
+}
     // ✅ REMOVED convertStringToDate function - keeping dates as strings
     const updateData = {
       ...resumeValues,

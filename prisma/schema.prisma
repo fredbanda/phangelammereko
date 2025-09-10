@@ -13,6 +13,21 @@ datasource db {
   url      = env("DATABASE_URI")
 }
 
+model User {
+  id        String   @id
+  email     String   @unique
+  name      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  linkedinProfiles LinkedinProfile[]
+  optimizationReports OptimizationReport[]
+  consultationOrders ConsultationOrder[]
+
+  @@map("users")
+}
+
+
 model Resume {
   id           String  @id @default(cuid())
   userId       String
@@ -162,4 +177,132 @@ model Award {
   updatedAt DateTime @updatedAt
 
   @@map("awards")
+}
+
+model LinkedinProfile {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  headline     String?
+  summary      String?
+  location     String?
+  industry     String?
+  experiences  Json?
+  education    Json?
+  skills       Json?
+  profileUrl   String?
+  profilePdf   String?
+  lastAnalyzed DateTime?
+  profileScore Int?    
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  optimizationReports OptimizationReport[]
+
+  @@map("linkedin_profiles")
+}
+
+
+model OptimizationReport {
+  id                String   @id @default(cuid())
+  userId            String
+  linkedinProfileId String
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  overallScore      Int      // 0-100
+  headlineScore     Int?     // 0-100
+  summaryScore      Int?     // 0-100
+  experienceScore   Int?     // 0-100
+  skillsScore       Int?     // 0-100
+  keywordAnalysis   Json?    // Missing keywords, suggestions
+  structureAnalysis Json?    // Profile completeness check
+  readabilityScore  Json?    // Readability metrics
+  resumeAlignment   Json?    // Alignment with user's resumes
+  headlineSuggestions    Json?
+  summarySuggestions     Json?
+  experienceSuggestions  Json?
+  skillSuggestions       Json?
+  reportGenerated Boolean @default(false)
+  reportUrl       String? // Path to generated PDF report
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  linkedinProfile LinkedinProfile @relation(fields: [linkedinProfileId], references: [id], onDelete: Cascade)
+
+  @@map("optimization_reports")
+}
+
+model ConsultationOrder {
+  id        String   @id @default(cuid())
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  consultationStatus    ConsultationStatus @default(PENDING)
+  amount    Int                // Amount in cents (R2000 = 200000)
+  currency  String             @default("ZAR")
+  consultationType String @default("linkedin_optimization")
+  requirements     Json?  // Special requirements from user
+  consultantId     String?
+  deliveredAt      DateTime?
+  deliveryUrl      String?   // Path to delivered optimized profile
+  consultantNotes  String?
+  paymentId        String?   // External payment provider ID
+  paymentStatus    PaymentStatus @default(PENDING)
+  clientName       String
+  clientEmail      String
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  consultant Consultant? @relation(fields: [consultantId], references: [id], onDelete: SetNull)
+
+  @@map("consultation_orders")
+}
+
+model Consultant {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Basic info
+  name      String
+  email     String   @unique
+  phone     String?
+  avatar    String?  // Profile image URL
+
+  // Professional details
+  title         String?  // e.g., "Senior LinkedIn Strategist"
+  bio           String?  // Professional bio
+  specializations Json?  // Array of specializations
+  skills        Json?    // Array of skills
+  experience    Int?     // Years of experience
+
+  // Availability and capacity
+  isActive      Boolean @default(true)
+  maxOrders     Int     @default(5)  // Max concurrent orders
+  hourlyRate    Int?    // Rate in cents per hour
+  
+  // Performance metrics
+  totalOrders   Int     @default(0)
+  completedOrders Int   @default(0)
+  averageRating Float?  // 1-5 star rating
+  
+  // Work schedule (stored as JSON)
+  availability  Json?   // Working hours, timezone, etc.
+
+  // Relations
+  consultationOrders ConsultationOrder[]
+
+  @@map("consultants")
+}
+
+enum ConsultationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
 }

@@ -124,16 +124,16 @@ function MoreMenu({ resumeId, onPrintClick }: MoreMenuProps) {
           </Button>
         </DropdownMenuTrigger>
 
-        <DropdownMenuContent className="bg-white">
+        <DropdownMenuContent className="bg-white ">
           <DropdownMenuItem
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center gap-2 cursor-pointer hover:bg-gray-400 hover:text-white"
             onClick={() => setShowDeleteConfirmation(true)}
           >
             <Trash2 className="size-4 text-red-600 cursor-pointer" />
             Delete
           </DropdownMenuItem>
           <DropdownMenuItem
-            className="flex items-center gap-2 cursor-pointer"
+            className="flex items-center gap-2 cursor-pointer hover:bg-gray-400 hover:text-white"
             onClick={onPrintClick}
           >
             <Printer className="size-4 text-blue-600 cursor-pointer" />
@@ -178,33 +178,34 @@ function DeleteConfirmationDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent>
-        <DialogHeader>
-          <DialogTitle> Delete Resume?</DialogTitle>
-          <DialogDescription>
-            Are you sure you want to delete this resume? This action is not
-            reversible.
-          </DialogDescription>
-        </DialogHeader>
-        <DialogFooter>
-          <LoadingButton
-            variant="destructive"
-            loading={isPending}
-            onClick={handleDelete}
-            className="w-1/2 cursor-pointer hover:bg-red-400"
-          >
-            Delete
-          </LoadingButton>
-          <Button
-            variant="default"
-            onClick={() => onOpenChange(false)}
-            className="w-1/2 cursor-pointer hover:bg-gray-600"
-          >
-            Cancel
-          </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+<Dialog open={open} onOpenChange={onOpenChange}>
+  <DialogContent className="max-w-lg">
+    <DialogHeader>
+      <DialogTitle>Delete Resume?</DialogTitle>
+      <DialogDescription>
+        Are you sure you want to delete this resume? This action is not
+        reversible.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter>
+      <LoadingButton
+        variant="destructive"
+        loading={isPending}
+        onClick={handleDelete}
+        className="w-1/2 cursor-pointer hover:bg-red-400"
+      >
+        Delete
+      </LoadingButton>
+      <Button
+        variant="default"
+        onClick={() => onOpenChange(false)}
+        className="w-1/2 cursor-pointer hover:bg-gray-600"
+      >
+        Cancel
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
   );
 }
