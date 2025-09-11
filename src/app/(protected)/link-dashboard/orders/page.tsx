@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
+
 "use client"
 
 import { useState, useEffect } from "react"
@@ -45,6 +45,7 @@ export default function OrdersManagement() {
 
   useEffect(() => {
     fetchOrdersData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange, statusFilter])
 
   const fetchOrdersData = async () => {

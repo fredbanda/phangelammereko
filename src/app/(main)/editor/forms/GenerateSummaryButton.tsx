@@ -3,7 +3,6 @@ import { toast } from "sonner";
 import { useState } from "react";
 import LoadingButton from "@/components/LoadingButton";
 import { WandSparklesIcon } from "lucide-react";
-import { set } from "zod";
 import { generateSummaryGemini } from "./actions";
 
 interface GenerateSummaryButtonProps {

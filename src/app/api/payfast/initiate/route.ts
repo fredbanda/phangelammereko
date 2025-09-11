@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // app/api/payfast/initiate/route.ts
 import { NextResponse } from "next/server";
 import crypto from "crypto";

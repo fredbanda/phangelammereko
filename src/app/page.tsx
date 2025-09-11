@@ -3,6 +3,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { ArrowRight, Target, TrendingUp, Users } from "lucide-react"
 
+
 export default function HomePage() {
   return (
     <div className="min-h-screen bg-pink-50">

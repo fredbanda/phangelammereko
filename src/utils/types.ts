@@ -22,3 +22,6 @@ export type ResumeServerData = Prisma.ResumeGetPayload<{
     include: typeof resumeDataInclude;
 }>;
 
+export type { Job, JobType, JobStatus } from "@prisma/client";
+
+

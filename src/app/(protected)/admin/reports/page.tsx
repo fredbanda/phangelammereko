@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
@@ -23,7 +24,6 @@ import {
   PieChart,
   Pie,
   Cell,
-  LabelList,
 } from "recharts"
 import { Download, TrendingUp, TrendingDown, Target, DollarSign, Users, Star, FileText, Filter } from "lucide-react"
 
@@ -127,6 +127,7 @@ export default function ReportsAndKPIs() {
     }).format(amount)
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const getKPIColor = (current: number, target: number) => {
     const percentage = (current / target) * 100
     if (percentage >= 90) return "text-green-600"

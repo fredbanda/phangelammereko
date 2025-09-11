@@ -72,6 +72,8 @@ async function DashboardStats() {
       </div>
     )
   } catch (error) {
+    console.log(error)
+    
     return (
       <div className="text-center py-8">
         <p className="text-muted-foreground">Failed to load dashboard stats</p>
@@ -135,6 +137,7 @@ async function RecentReports() {
       </Card>
     )
   } catch (error) {
+    console.log(error)
     return (
       <Card>
         <CardHeader>
@@ -228,6 +231,7 @@ async function RecentOrders() {
       </Card>
     )
   } catch (error) {
+    console.log(error)
     return (
       <Card>
         <CardHeader>

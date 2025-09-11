@@ -44,6 +44,7 @@ export default function OrdersManagement() {
 
   useEffect(() => {
     fetchOrdersData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange, statusFilter])
 
   const fetchOrdersData = async () => {

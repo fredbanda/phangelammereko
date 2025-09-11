@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Logo from "../../../public/logo.png";
 import Image from "next/image";
-import { SignedOut, SignInButton, UserButton} from "@clerk/nextjs";
+import { SignedOut, SignInButton, UserButton, useUser} from "@clerk/nextjs";
 import { CreditCard, Menu, X } from "lucide-react";
 import { ThemeToggle } from "./theme-toggle";
 import { useState } from "react";
@@ -11,6 +11,7 @@ import { Button } from "../ui/button";
 
 export default function Navbar() {
   const [menuOpen, setMenuOpen] = useState(false);
+  const {user} = useUser();
 
   return (
     <header className="shadow-sm">
@@ -24,10 +25,12 @@ export default function Navbar() {
         {/* Desktop Links */}
         <div className="hidden md:flex gap-6 items-center text-black dark:text-white">
           <Link href="/resumes">Create Resume</Link>
-          <Link href="/resumes">Dashboard</Link>
-          <Link href="/vacancies">Current Vacancies</Link>
+          {user && (
+            <Link href="/dashboard">Dashboard</Link>
+            
+          )}
+          <Link href="/job-home">Vacancies</Link>
           <Link href="/jobs/create">Post A Job</Link>
-          <Link href="/supportus">Support the Project</Link>
         </div>
 
         {/* User + Theme */}
@@ -82,10 +85,12 @@ export default function Navbar() {
       {menuOpen && (
         <div className="fixed top-[64px] inset-x-0 bg-white dark:bg-gray-900 shadow-md flex flex-col z-50 items-start p-4 space-y-4 md:hidden dark:text-white">
           <Link href="/editor" onClick={() => setMenuOpen(false)}>Create Resume</Link>
-          <Link href="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
-          <Link href="/vacancies" onClick={() => setMenuOpen(false)}>Current Vacancies</Link>
+          {user && (
+                      <Link href="/dashboard" onClick={() => setMenuOpen(false)}>Dashboard</Link>
+          )}
+
+          <Link href="/job-home" onClick={() => setMenuOpen(false)}>Current Vacancies</Link>
           <Link href="/jobs/create" onClick={() => setMenuOpen(false)}>Post A Job</Link>
-          <Link href="/supportus" onClick={() => setMenuOpen(false)}>Support the Project</Link>
         </div>
       )}
     </header>

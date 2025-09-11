@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 import { type NextRequest, NextResponse } from "next/server"
 import prisma from "@/utils/prisma"
 import { auth, currentUser } from "@clerk/nextjs/server"

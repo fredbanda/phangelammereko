@@ -14,7 +14,6 @@ import {
   CartesianGrid,
   Tooltip,
   ResponsiveContainer,
-  LineChart,
   Line,
   PieChart,
   Pie,
@@ -69,6 +68,7 @@ export default function ManagerDashboard() {
 
   useEffect(() => {
     fetchDashboardData()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange])
 
   const fetchDashboardData = async () => {
