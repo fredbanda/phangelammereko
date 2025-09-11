@@ -2,8 +2,9 @@
 import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { MapPin, Clock, DollarSign, Crown } from "lucide-react"
+import { MapPin, Clock, DollarSign, Crown, Banknote } from "lucide-react"
 import type { Job } from "@/utils/types"
+import Rand from "../../../../../public/south-africa-rand.png"
 
 interface JobCardProps {
   job: Job
@@ -61,7 +62,7 @@ export function JobCard({ job }: JobCardProps) {
 
           {(job.salaryMin, job.salaryMax) && (
             <div className="flex items-center gap-1">
-              <DollarSign className="h-4 w-4" />
+              <Banknote className="h-4 w-4" />
               {(job.salaryMin, job.salaryMax)}
             </div>
           )}
