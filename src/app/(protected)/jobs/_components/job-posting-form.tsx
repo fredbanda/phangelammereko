@@ -288,7 +288,7 @@ export function JobPostingForm() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="salaryMax">Maximum Salary (USD)</Label>
+                <Label htmlFor="salaryMax">Maximum Salary (ZAR)</Label>
                 <Input
                   id="salaryMax"
                   name="salaryMax"
@@ -362,7 +362,7 @@ export function JobPostingForm() {
               <Badge variant="secondary" className="bg-amber-100 text-amber-800">
                 Premium Feature
               </Badge>
-              <p className="text-sm font-medium mt-1">Starting from $49</p>
+              <p className="text-sm font-medium mt-1">Starting from R490</p>
             </div>
 
             <PromotionModal jobId={String(lastCreatedJobId || 0)} jobTitle="Your New Job">

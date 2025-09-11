@@ -18,7 +18,7 @@ export default function JobHomePage() {
             <Link href="/jobs">
               <Button variant="ghost">Browse Jobs</Button>
             </Link>
-            <Link href="/post-job">
+            <Link href="/jobs/create">
               <Button>
                 <Plus className="h-4 w-4 mr-2" />
                 Post Job

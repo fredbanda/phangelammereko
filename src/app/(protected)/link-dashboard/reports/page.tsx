@@ -1,4 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+const dynamic = "force-dynamic";
+
 import { Suspense } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -46,6 +49,7 @@ async function ReportsContent() {
       </div>
     )
   } catch (error) {
+    console.error(error)
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">

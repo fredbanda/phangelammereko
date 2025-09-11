@@ -43,7 +43,7 @@ export function JobFilters() {
         <div className="space-y-3">
           <Label className="text-sm font-medium">Salary Range</Label>
           <div className="space-y-2">
-            {["Under $50k", "$50k - $75k", "$75k - $100k", "$100k - $150k", "Over $150k"].map((range) => (
+            {["Under R50k", "R50k - R75k", "R75k - R100k", "R100k - R150k", "Over R150k"].map((range) => (
               <div key={range} className="flex items-center space-x-2">
                 <Checkbox id={range} />
                 <Label htmlFor={range} className="text-sm font-normal">
