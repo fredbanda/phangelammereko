@@ -1,7 +1,8 @@
-import { CheckoutFlow } from "@/components/linkedin/checkout-flow"
+"use client"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Star, Clock, Users } from "lucide-react"
+import CheckoutFlow from "@/components/linkedin/checkout-flow"
 
 export default function CheckoutPage() {
   return (

@@ -1,10 +1,8 @@
-/* eslint-disable @typescript-eslint/no-unused-vars */
 "use client"
 
-import { useState } from "react"
-import { useForm } from "react-hook-form"
-import { zodResolver } from "@hookform/resolvers/zod"
-import { z } from "zod"
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+import { useState, useRef } from "react"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -14,60 +12,72 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ArrowRight, CreditCard, User, FileText, CheckCircle } from "lucide-react"
-import {toast} from "sonner"
-import { createCheckoutSession } from "../premium/actions"
+import { ArrowLeft, ArrowRight, CreditCard, User, FileText, CheckCircle, Shield, AlertCircle, Bug } from "lucide-react"
+import PayButton from "../PaymentButton"
 
+// Simplified validation functions instead of zod
+const validatePersonalInfo = (data: any) => {
+  const errors: any = {}
+  if (!data.firstName || data.firstName.length < 2) errors.firstName = "First name must be at least 2 characters"
+  if (!data.lastName || data.lastName.length < 2) errors.lastName = "Last name must be at least 2 characters"
+  if (!data.email || !/\S+@\S+\.\S+/.test(data.email)) errors.email = "Please enter a valid email address"
+  if (!data.phone || data.phone.length < 10) errors.phone = "Please enter a valid phone number"
+  if (!data.linkedinUrl || !data.linkedinUrl.startsWith('http')) errors.linkedinUrl = "Please enter a valid LinkedIn URL"
+  return { isValid: Object.keys(errors).length === 0, errors }
+}
 
-const personalInfoSchema = z.object({
-  firstName: z.string().min(2, "First name must be at least 2 characters"),
-  lastName: z.string().min(2, "Last name must be at least 2 characters"),
-  email: z.string().email("Please enter a valid email address"),
-  phone: z.string().min(10, "Please enter a valid phone number"),
-  linkedinUrl: z.string().url("Please enter a valid LinkedIn URL"),
-})
+const validateRequirements = (data: any) => {
+  const errors: any = {}
+  if (!data.currentRole || data.currentRole.length < 2) errors.currentRole = "Please enter your current role"
+  if (!data.targetRole || data.targetRole.length < 2) errors.targetRole = "Please enter your target role"
+  if (!data.industry || data.industry.length < 2) errors.industry = "Please enter your industry"
+  if (!data.experience) errors.experience = "Please select your experience level"
+  if (!data.urgency) errors.urgency = "Please select urgency level"
+  return { isValid: Object.keys(errors).length === 0, errors }
+}
 
-const requirementsSchema = z.object({
-  currentRole: z.string().min(2, "Please enter your current role"),
-  targetRole: z.string().min(2, "Please enter your target role"),
-  industry: z.string().min(2, "Please enter your industry"),
-  experience: z.string().min(1, "Please select your experience level"),
-  specificRequirements: z.string().optional(),
-  urgency: z.string().min(1, "Please select urgency level"),
-})
+const validatePayment = (data: any) => {
+  const errors: any = {}
+  if (!data.agreeToTerms) errors.agreeToTerms = "You must agree to the terms and conditions"
+  return { isValid: Object.keys(errors).length === 0, errors }
+}
 
-const paymentSchema = z.object({
-  cardNumber: z.string().min(16, "Please enter a valid card number"),
-  expiryDate: z.string().min(5, "Please enter expiry date (MM/YY)"),
-  cvv: z.string().min(3, "Please enter CVV"),
-  cardholderName: z.string().min(2, "Please enter cardholder name"),
-  billingAddress: z.string().min(5, "Please enter billing address"),
-  city: z.string().min(2, "Please enter city"),
-  postalCode: z.string().min(4, "Please enter postal code"),
-  agreeToTerms: z.boolean().refine((val) => val === true, "You must agree to the terms and conditions"),
-})
-
-type PersonalInfo = z.infer<typeof personalInfoSchema>
-type Requirements = z.infer<typeof requirementsSchema>
-type Payment = z.infer<typeof paymentSchema>
-
-export function CheckoutFlow() {
+export default function CheckoutFlow() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-    const [loading, setLoading] = useState(false);
+  const [debugInfo, setDebugInfo] = useState<string[]>([])
+  const [errors, setErrors] = useState<any>({})
+  
+  const [orderData, setOrderData] = useState<{
+    personalInfo?: any
+    requirements?: any
+  }>({})
 
-
-  const personalForm = useForm<PersonalInfo>({
-    resolver: zodResolver(personalInfoSchema),
+  // Form data states
+  const [personalInfo, setPersonalInfo] = useState({
+    firstName: '',
+    lastName: '',
+    email: '',
+    phone: '',
+    linkedinUrl: ''
   })
 
-  const requirementsForm = useForm<Requirements>({
-    resolver: zodResolver(requirementsSchema),
+  const [requirements, setRequirements] = useState({
+    currentRole: '',
+    targetRole: '',
+    industry: '',
+    experience: '',
+    urgency: '',
+    specificRequirements: ''
   })
 
-  const paymentForm = useForm<Payment>({
-    resolver: zodResolver(paymentSchema),
+  const [payment, setPayment] = useState({
+    agreeToTerms: false
   })
+
+  const addDebugInfo = (message: string) => {
+    setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
+  }
 
   const steps = [
     { number: 1, title: "Personal Information", icon: User },
@@ -75,72 +85,125 @@ export function CheckoutFlow() {
     { number: 3, title: "Payment", icon: CreditCard },
   ]
 
-  const handlePersonalInfoSubmit = (data: PersonalInfo) => {
-    console.log("Personal info:", data)
-    setCurrentStep(2)
+  const handlePersonalInfoSubmit = () => {
+    addDebugInfo("Personal info form submitted")
+    
+    const validation = validatePersonalInfo(personalInfo)
+    setErrors(validation.errors)
+    
+    if (validation.isValid) {
+      addDebugInfo("Personal info validation passed")
+      setOrderData(prev => ({ ...prev, personalInfo }))
+      setCurrentStep(2)
+      addDebugInfo("Moved to step 2")
+    } else {
+      addDebugInfo("Personal info validation failed")
+    }
   }
 
-  const handleRequirementsSubmit = (data: Requirements) => {
-    console.log("Requirements:", data)
-    setCurrentStep(3)
+  const handleRequirementsSubmit = () => {
+    addDebugInfo("Requirements form submitted")
+    
+    const validation = validateRequirements(requirements)
+    setErrors(validation.errors)
+    
+    if (validation.isValid) {
+      addDebugInfo("Requirements validation passed")
+      setOrderData(prev => ({ ...prev, requirements }))
+      setCurrentStep(3)
+      addDebugInfo("Moved to step 3")
+    } else {
+      addDebugInfo("Requirements validation failed")
+    }
   }
 
-  async function handlePremiumClick(priceId: string) {
-      try {
-          setLoading(true);
-          const sessionUrl = await createCheckoutSession(priceId);
-          window.location.href = sessionUrl;
-      } catch (error) {
-          console.log(error);
-          toast.error("Something went wrong while creating the checkout session", {
-            position: "top-right",
-          });
-          
-      }finally{
-          setLoading(false);
-      }
+  const handlePaymentSubmit = async () => {
+    addDebugInfo("Payment form submitted - STARTING PAYMENT PROCESS")
+    
+    const validation = validatePayment(payment)
+    setErrors(validation.errors)
+    
+    if (!validation.isValid) {
+      addDebugInfo("Payment validation failed")
+      return
     }
 
-  const handlePaymentSubmit = async (data: Payment) => {
     setIsSubmitting(true)
+    addDebugInfo("Setting isSubmitting to true")
 
     try {
-      // Combine all form data
-      const orderData = {
-        personalInfo: personalForm.getValues(),
-        requirements: requirementsForm.getValues(),
-        payment: data,
-        amount: 200000, // R2000 in cents
+      const completeOrderData = {
+        personalInfo: orderData.personalInfo,
+        requirements: orderData.requirements,
+        amount: requirements.urgency === 'priority' ? 250000 : requirements.urgency === 'urgent' ? 300000 : 200000,
         currency: "ZAR",
       }
+
+      addDebugInfo(`Sending order data: ${JSON.stringify(completeOrderData)}`)
+      addDebugInfo("About to make API call to /api/linkedin/create-order")
 
       const response = await fetch("/api/linkedin/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(orderData),
+        body: JSON.stringify(completeOrderData),
       })
 
+      addDebugInfo(`API response status: ${response.status}`)
+      addDebugInfo(`API response ok: ${response.ok}`)
+
       if (!response.ok) {
-        throw new Error("Failed to create order")
+        const errorText = await response.text()
+        addDebugInfo(`API error response: ${errorText}`)
+        throw new Error(`Failed to create order: ${response.status} ${errorText}`)
       }
 
       const result = await response.json()
+      addDebugInfo(`API success response: ${JSON.stringify(result)}`)
 
-    //   toast({
-    //     title: "Order created successfully!",
-    //     description: "You will receive a confirmation email shortly with next steps.",
-    //   })
-
-      // Redirect to success page
-      window.location.href = `/linkedin-optimizer/checkout/success?orderId=${result.orderId}`
-    } catch (error) {
-        console.error(error)
-      toast.error("Payment failed")
+      if (result.success && result.paymentData && result.paymentUrl) {
+        addDebugInfo("About to submit PayFast form")
+        submitPayFastForm(result.paymentData, result.paymentUrl)
+      } else {
+        addDebugInfo("Invalid response from server - missing required fields")
+        throw new Error("Invalid response from server")
+      }
+      
+    } catch (error: any) {
+      addDebugInfo(`Error occurred: ${error.message}`)
+      console.error(error)
+      alert(`Failed to process order: ${error.message}`)
     } finally {
       setIsSubmitting(false)
+      addDebugInfo("Setting isSubmitting to false")
     }
+  }
+
+  const submitPayFastForm = (paymentData: any, paymentUrl: string) => {
+    addDebugInfo(`Creating PayFast form with URL: ${paymentUrl}`)
+    addDebugInfo(`PayFast data keys: ${Object.keys(paymentData).join(', ')}`)
+    
+    const form = document.createElement('form')
+    form.method = 'POST'
+    form.action = paymentUrl
+    form.style.display = 'none'
+
+    Object.keys(paymentData).forEach(key => {
+      if (paymentData[key] !== null && paymentData[key] !== undefined && paymentData[key] !== '') {
+        const input = document.createElement('input')
+        input.type = 'hidden'
+        input.name = key
+        input.value = paymentData[key].toString()
+        form.appendChild(input)
+        addDebugInfo(`Added form field: ${key} = ${paymentData[key]}`)
+      }
+    })
+
+    document.body.appendChild(form)
+    addDebugInfo("Form appended to body, about to submit")
+    form.submit()
+    addDebugInfo("Form submitted!")
   }
 
   const progress = (currentStep / steps.length) * 100
@@ -192,20 +255,28 @@ export function CheckoutFlow() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={personalForm.handleSubmit(handlePersonalInfoSubmit)} className="space-y-4">
+            <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="firstName">First Name *</Label>
-                  <Input id="firstName" {...personalForm.register("firstName")} />
-                  {personalForm.formState.errors.firstName && (
-                    <p className="text-sm text-destructive mt-1">{personalForm.formState.errors.firstName.message}</p>
+                  <Input 
+                    id="firstName" 
+                    value={personalInfo.firstName}
+                    onChange={(e) => setPersonalInfo(prev => ({...prev, firstName: e.target.value}))}
+                  />
+                  {errors.firstName && (
+                    <p className="text-sm text-destructive mt-1">{errors.firstName}</p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="lastName">Last Name *</Label>
-                  <Input id="lastName" {...personalForm.register("lastName")} />
-                  {personalForm.formState.errors.lastName && (
-                    <p className="text-sm text-destructive mt-1">{personalForm.formState.errors.lastName.message}</p>
+                  <Input 
+                    id="lastName" 
+                    value={personalInfo.lastName}
+                    onChange={(e) => setPersonalInfo(prev => ({...prev, lastName: e.target.value}))}
+                  />
+                  {errors.lastName && (
+                    <p className="text-sm text-destructive mt-1">{errors.lastName}</p>
                   )}
                 </div>
               </div>
@@ -213,16 +284,26 @@ export function CheckoutFlow() {
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="email">Email Address *</Label>
-                  <Input id="email" type="email" {...personalForm.register("email")} />
-                  {personalForm.formState.errors.email && (
-                    <p className="text-sm text-destructive mt-1">{personalForm.formState.errors.email.message}</p>
+                  <Input 
+                    id="email" 
+                    type="email" 
+                    value={personalInfo.email}
+                    onChange={(e) => setPersonalInfo(prev => ({...prev, email: e.target.value}))}
+                  />
+                  {errors.email && (
+                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone Number *</Label>
-                  <Input id="phone" {...personalForm.register("phone")} />
-                  {personalForm.formState.errors.phone && (
-                    <p className="text-sm text-destructive mt-1">{personalForm.formState.errors.phone.message}</p>
+                  <Input 
+                    id="phone" 
+                    placeholder="e.g., 0821234567" 
+                    value={personalInfo.phone}
+                    onChange={(e) => setPersonalInfo(prev => ({...prev, phone: e.target.value}))}
+                  />
+                  {errors.phone && (
+                    <p className="text-sm text-destructive mt-1">{errors.phone}</p>
                   )}
                 </div>
               </div>
@@ -232,20 +313,21 @@ export function CheckoutFlow() {
                 <Input
                   id="linkedinUrl"
                   placeholder="https://linkedin.com/in/yourname"
-                  {...personalForm.register("linkedinUrl")}
+                  value={personalInfo.linkedinUrl}
+                  onChange={(e) => setPersonalInfo(prev => ({...prev, linkedinUrl: e.target.value}))}
                 />
-                {personalForm.formState.errors.linkedinUrl && (
-                  <p className="text-sm text-destructive mt-1">{personalForm.formState.errors.linkedinUrl.message}</p>
+                {errors.linkedinUrl && (
+                  <p className="text-sm text-destructive mt-1">{errors.linkedinUrl}</p>
                 )}
               </div>
 
               <div className="flex justify-end">
-                <Button type="submit">
+                <Button onClick={handlePersonalInfoSubmit}>
                   Continue to Requirements
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
-            </form>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -263,19 +345,18 @@ export function CheckoutFlow() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={requirementsForm.handleSubmit(handleRequirementsSubmit)} className="space-y-4">
+            <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <div>
                   <Label htmlFor="currentRole">Current Role *</Label>
                   <Input
                     id="currentRole"
                     placeholder="e.g., Software Engineer"
-                    {...requirementsForm.register("currentRole")}
+                    value={requirements.currentRole}
+                    onChange={(e) => setRequirements(prev => ({...prev, currentRole: e.target.value}))}
                   />
-                  {requirementsForm.formState.errors.currentRole && (
-                    <p className="text-sm text-destructive mt-1">
-                      {requirementsForm.formState.errors.currentRole.message}
-                    </p>
+                  {errors.currentRole && (
+                    <p className="text-sm text-destructive mt-1">{errors.currentRole}</p>
                   )}
                 </div>
                 <div>
@@ -283,12 +364,11 @@ export function CheckoutFlow() {
                   <Input
                     id="targetRole"
                     placeholder="e.g., Senior Software Engineer"
-                    {...requirementsForm.register("targetRole")}
+                    value={requirements.targetRole}
+                    onChange={(e) => setRequirements(prev => ({...prev, targetRole: e.target.value}))}
                   />
-                  {requirementsForm.formState.errors.targetRole && (
-                    <p className="text-sm text-destructive mt-1">
-                      {requirementsForm.formState.errors.targetRole.message}
-                    </p>
+                  {errors.targetRole && (
+                    <p className="text-sm text-destructive mt-1">{errors.targetRole}</p>
                   )}
                 </div>
               </div>
@@ -299,41 +379,47 @@ export function CheckoutFlow() {
                   <Input
                     id="industry"
                     placeholder="e.g., Information Technology"
-                    {...requirementsForm.register("industry")}
+                    value={requirements.industry}
+                    onChange={(e) => setRequirements(prev => ({...prev, industry: e.target.value}))}
                   />
-                  {requirementsForm.formState.errors.industry && (
-                    <p className="text-sm text-destructive mt-1">
-                      {requirementsForm.formState.errors.industry.message}
-                    </p>
+                  {errors.industry && (
+                    <p className="text-sm text-destructive mt-1">{errors.industry}</p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="experience">Years of Experience *</Label>
-                  <select className="w-full p-2 border rounded-md" {...requirementsForm.register("experience")}>
+                  <select 
+                    className="w-full p-2 border rounded-md" 
+                    value={requirements.experience}
+                    onChange={(e) => setRequirements(prev => ({...prev, experience: e.target.value}))}
+                  >
                     <option value="">Select experience level</option>
+                    <option value="0-2">0-2 years</option>
                     <option value="3-5">3-5 years</option>
                     <option value="5-8">5-8 years</option>
                     <option value="8-12">8-12 years</option>
                     <option value="12+">12+ years</option>
                   </select>
-                  {requirementsForm.formState.errors.experience && (
-                    <p className="text-sm text-destructive mt-1">
-                      {requirementsForm.formState.errors.experience.message}
-                    </p>
+                  {errors.experience && (
+                    <p className="text-sm text-destructive mt-1">{errors.experience}</p>
                   )}
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="urgency">Timeline *</Label>
-                <select className="w-full p-2 border rounded-md" {...requirementsForm.register("urgency")}>
+                <select 
+                  className="w-full p-2 border rounded-md" 
+                  value={requirements.urgency}
+                  onChange={(e) => setRequirements(prev => ({...prev, urgency: e.target.value}))}
+                >
                   <option value="">Select timeline</option>
-                  <option value="standard">Standard (5-7 days)</option>
-                  <option value="priority">Priority (3-4 days)</option>
-                  <option value="urgent">Urgent (1-2 days)</option>
+                  <option value="standard">Standard (5-7 days) - R2,000</option>
+                  <option value="priority">Priority (3-4 days) - R2,500</option>
+                  <option value="urgent">Urgent (1-2 days) - R3,000</option>
                 </select>
-                {requirementsForm.formState.errors.urgency && (
-                  <p className="text-sm text-destructive mt-1">{requirementsForm.formState.errors.urgency.message}</p>
+                {errors.urgency && (
+                  <p className="text-sm text-destructive mt-1">{errors.urgency}</p>
                 )}
               </div>
 
@@ -343,21 +429,22 @@ export function CheckoutFlow() {
                   id="specificRequirements"
                   placeholder="Any specific goals, challenges, or requirements for your LinkedIn optimization..."
                   rows={4}
-                  {...requirementsForm.register("specificRequirements")}
+                  value={requirements.specificRequirements}
+                  onChange={(e) => setRequirements(prev => ({...prev, specificRequirements: e.target.value}))}
                 />
               </div>
 
               <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(1)}>
+                <Button variant="outline" onClick={() => setCurrentStep(1)}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button type="submit">
+                <Button onClick={handleRequirementsSubmit}>
                   Continue to Payment
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
-            </form>
+            </div>
           </CardContent>
         </Card>
       )}
@@ -368,111 +455,147 @@ export function CheckoutFlow() {
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-chart-1" />
-              Payment Information
+              Payment with PayFast
             </CardTitle>
-            <CardDescription>Secure payment processing. Your information is encrypted and protected.</CardDescription>
+            <CardDescription>
+              Secure payment processing via PayFast - South Africa&apos;s leading payment gateway.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={paymentForm.handleSubmit(handlePaymentSubmit)} className="space-y-4">
+            <div className="space-y-6">
               <Alert>
-                <CheckCircle className="h-4 w-4" />
+                <Shield className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Secure Payment:</strong> All payment information is encrypted and processed securely.
+                  <strong>Secure PayFast Payment:</strong> Your payment will be processed securely through PayFast, 
+                  South Africa&apos;s most trusted payment gateway. You can pay with credit cards, instant EFT, or other local payment methods.
                 </AlertDescription>
               </Alert>
 
-              <div>
-                <Label htmlFor="cardNumber">Card Number *</Label>
-                <Input id="cardNumber" placeholder="1234 5678 9012 3456" {...paymentForm.register("cardNumber")} />
-                {paymentForm.formState.errors.cardNumber && (
-                  <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.cardNumber.message}</p>
-                )}
-              </div>
-
-              <div className="grid grid-cols-3 gap-4">
-                <div className="col-span-2">
-                  <Label htmlFor="expiryDate">Expiry Date *</Label>
-                  <Input id="expiryDate" placeholder="MM/YY" {...paymentForm.register("expiryDate")} />
-                  {paymentForm.formState.errors.expiryDate && (
-                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.expiryDate.message}</p>
+              {/* Order Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Order Summary</h4>
+                <div className="space-y-2 text-sm">
+                  <div className="flex justify-between">
+                    <span>LinkedIn Optimization Consultation</span>
+                    <span>R2,000.00</span>
+                  </div>
+                  {requirements.urgency === 'priority' && (
+                    <div className="flex justify-between text-orange-600">
+                      <span>Priority Service (3-4 days)</span>
+                      <span>+R500.00</span>
+                    </div>
                   )}
-                </div>
-                <div>
-                  <Label htmlFor="cvv">CVV *</Label>
-                  <Input id="cvv" placeholder="123" {...paymentForm.register("cvv")} />
-                  {paymentForm.formState.errors.cvv && (
-                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.cvv.message}</p>
+                  {requirements.urgency === 'urgent' && (
+                    <div className="flex justify-between text-red-600">
+                      <span>Urgent Service (1-2 days)</span>
+                      <span>+R1,000.00</span>
+                    </div>
                   )}
-                </div>
-              </div>
-
-              <div>
-                <Label htmlFor="cardholderName">Cardholder Name *</Label>
-                <Input id="cardholderName" placeholder="John Doe" {...paymentForm.register("cardholderName")} />
-                {paymentForm.formState.errors.cardholderName && (
-                  <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.cardholderName.message}</p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="billingAddress">Billing Address *</Label>
-                <Input id="billingAddress" placeholder="123 Main Street" {...paymentForm.register("billingAddress")} />
-                {paymentForm.formState.errors.billingAddress && (
-                  <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.billingAddress.message}</p>
-                )}
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="city">City *</Label>
-                  <Input id="city" placeholder="Cape Town" {...paymentForm.register("city")} />
-                  {paymentForm.formState.errors.city && (
-                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.city.message}</p>
-                  )}
-                </div>
-                <div>
-                  <Label htmlFor="postalCode">Postal Code *</Label>
-                  <Input id="postalCode" placeholder="8001" {...paymentForm.register("postalCode")} />
-                  {paymentForm.formState.errors.postalCode && (
-                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.postalCode.message}</p>
-                  )}
+                  <hr className="my-2" />
+                  <div className="flex justify-between font-semibold">
+                    <span>Total</span>
+                    <span>
+                      {requirements.urgency === 'priority' ? 'R2,500.00' :
+                       requirements.urgency === 'urgent' ? 'R3,000.00' : 'R2,000.00'}
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox id="agreeToTerms" {...paymentForm.register("agreeToTerms")} />
-                <Label htmlFor="agreeToTerms" className="text-sm">
-                  I agree to the{" "}
-                  <a href="/terms" className="text-primary hover:underline">
-                    Terms and Conditions
-                  </a>{" "}
-                  and{" "}
-                  <a href="/privacy" className="text-primary hover:underline">
-                    Privacy Policy
-                  </a>
-                </Label>
+              {/* Payment Methods Info */}
+              <div className="bg-blue-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2 flex items-center gap-2">
+                  <CreditCard className="w-4 h-4" />
+                  Available Payment Methods
+                </h4>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
+                  <div className="flex items-center gap-1">
+                    <span>💳</span> Credit Cards
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span>🏧</span> Instant EFT
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span>📱</span> SnapScan
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <span>🏪</span> Store Cards
+                  </div>
+                </div>
               </div>
-              {paymentForm.formState.errors.agreeToTerms && (
-                <p className="text-sm text-destructive">{paymentForm.formState.errors.agreeToTerms.message}</p>
+
+              {/* Customer Details Summary */}
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <h4 className="font-semibold mb-2">Customer Details</h4>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+                  <div>
+                    <span className="font-medium">Name:</span> {orderData.personalInfo?.firstName} {orderData.personalInfo?.lastName}
+                  </div>
+                  <div>
+                    <span className="font-medium">Email:</span> {orderData.personalInfo?.email}
+                  </div>
+                  <div>
+                    <span className="font-medium">Phone:</span> {orderData.personalInfo?.phone}
+                  </div>
+                  <div>
+                    <span className="font-medium">Timeline:</span> {
+                      requirements.urgency === 'standard' ? '5-7 days' :
+                      requirements.urgency === 'priority' ? '3-4 days' :
+                      requirements.urgency === 'urgent' ? '1-2 days' : 'Standard'
+                    }
+                  </div>
+                </div>
+              </div>
+
+              {/* Terms and Conditions */}
+              <div className="flex items-start space-x-2">
+                <Checkbox 
+                  id="agreeToTerms" 
+                  checked={payment.agreeToTerms}
+                  onCheckedChange={(checked) => setPayment(prev => ({...prev, agreeToTerms: !!checked}))}
+                />
+                <div className="text-sm">
+                  <Label htmlFor="agreeToTerms" className="text-sm cursor-pointer">
+                    I agree to the{" "}
+                    <a href="/terms" target="_blank" className="text-primary hover:underline">
+                      Terms and Conditions
+                    </a>{" "}
+                    and{" "}
+                    <a href="/privacy" target="_blank" className="text-primary hover:underline">
+                      Privacy Policy
+                    </a>. I understand that payment will be processed through PayFast and I will be redirected to their secure payment page.
+                  </Label>
+                </div>
+              </div>
+              {errors.agreeToTerms && (
+                <p className="text-sm text-destructive">{errors.agreeToTerms}</p>
               )}
 
               <div className="flex justify-between">
-                <Button type="button" variant="outline" onClick={() => setCurrentStep(2)}>
+                <Button variant="outline" onClick={() => setCurrentStep(2)}>
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button 
-                onClick={() =>
-                  handlePremiumClick(
-                    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!,
-                  )
-                }
-                
-                type="submit" disabled={isSubmitting} size="lg" className="px-8">
-                  {isSubmitting ? "Processing..." : "Complete Order - R2,000"}
+                <Button onClick={handlePaymentSubmit} disabled={isSubmitting} size="lg" className="px-8">
+                  {isSubmitting ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                      Processing...
+                    </>
+                  ) : (
+                    <>
+                      Proceed to PayFast - {
+                        requirements.urgency === 'priority' ? 'R2,500' :
+                        requirements.urgency === 'urgent' ? 'R3,000' : 'R2,000'
+                      }
+                    </>
+                  )}
                 </Button>
+                <p>
+                  <PayButton />
+                </p>
               </div>
-            </form>
+            </div>
           </CardContent>
         </Card>
       )}

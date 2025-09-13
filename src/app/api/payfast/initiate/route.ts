@@ -26,9 +26,9 @@ export async function POST(req: Request) {
   const paymentData: Record<string, string> = {
     merchant_id: merchantId,
     merchant_key: merchantKey,
-    return_url: "https://yourapp.com/payment-success",
-    cancel_url: "https://yourapp.com/payment-cancel",
-    notify_url: "https://yourapp.com/api/payfast/notify",
+    return_url: "http://localhost:3000/linkedin-optimizer/checkout/success",
+    cancel_url: "http://localhost:3000/linkedin-optimizer/checkout/cancel",
+    notify_url: "http://localhost:3000/api/payfast/notify",
     amount: amount.toFixed(2),
     item_name: itemName,
   };

@@ -3,10 +3,10 @@ import { notFound } from "next/navigation"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
-import { CheckCircle, Calendar, Mail, Phone, ArrowRight, Loader2 } from "lucide-react"
+import { CheckCircle, Calendar, Mail, Phone, ArrowRight } from "lucide-react"
 import Link from "next/link"
 import prisma from "@/utils/prisma"
-import stripe from "@/lib/stripe"
+//import stripe from "@/lib/stripe"
 
 interface SuccessPageProps {
   searchParams?: Promise<{
@@ -32,8 +32,8 @@ interface SuccessPageProps {
 //       order = await prisma.consultationOrder.update({
 //         where: { id: session.metadata.orderId },
 //         data: {
-//           paymentStatus: session.payment_status === "paid" ? "completed" : "pending",
-//           status: session.payment_status === "paid" ? "confirmed" : "pending",
+//           paymentStatus: session.payment_status === "PAID" ? "FAILED" : "PENDING",
+//           consultationStatus: session.payment_status"IN_PROGRESS" ? "PENDING" : "IN_PROGRESS",
 //           stripeSessionId: session.id,
 //           paymentIntentId: session.payment_intent as string || null,
 //           updatedAt: new Date(),
@@ -80,7 +80,7 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
       include: { user: true },
     })
   } else if (sessionId) {
-    // Stripe session redirect (new flow)
+    // // Stripe session redirect (new flow)
     // order = await getOrderFromStripeSession(sessionId)
   }
 
