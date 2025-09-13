@@ -12,8 +12,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ArrowRight, CreditCard, User, FileText, CheckCircle, Shield, AlertCircle, Bug } from "lucide-react"
-import PayButton from "../PaymentButton"
+import { ArrowLeft, ArrowRight, CreditCard, User, FileText, CheckCircle, Shield, AlertCircle, Bug, Mail, Send } from "lucide-react"
 
 // Simplified validation functions instead of zod
 const validatePersonalInfo = (data: any) => {
@@ -45,6 +44,7 @@ const validatePayment = (data: any) => {
 export default function CheckoutFlow() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isSubmitted, setIsSubmitted] = useState(false)
   const [debugInfo, setDebugInfo] = useState<string[]>([])
   const [errors, setErrors] = useState<any>({})
   
@@ -82,7 +82,7 @@ export default function CheckoutFlow() {
   const steps = [
     { number: 1, title: "Personal Information", icon: User },
     { number: 2, title: "Requirements", icon: FileText },
-    { number: 3, title: "Payment", icon: CreditCard },
+    { number: 3, title: "Submit Order", icon: Mail },
   ]
 
   const handlePersonalInfoSubmit = () => {
@@ -117,14 +117,14 @@ export default function CheckoutFlow() {
     }
   }
 
-  const handlePaymentSubmit = async () => {
-    addDebugInfo("Payment form submitted - STARTING PAYMENT PROCESS")
+  const handleOrderSubmit = async () => {
+    addDebugInfo("Order form submitted - STARTING EMAIL SUBMISSION PROCESS")
     
     const validation = validatePayment(payment)
     setErrors(validation.errors)
     
     if (!validation.isValid) {
-      addDebugInfo("Payment validation failed")
+      addDebugInfo("Order validation failed")
       return
     }
 
@@ -135,78 +135,143 @@ export default function CheckoutFlow() {
       const completeOrderData = {
         personalInfo: orderData.personalInfo,
         requirements: orderData.requirements,
-        amount: requirements.urgency === 'priority' ? 250000 : requirements.urgency === 'urgent' ? 300000 : 200000,
+        amount: requirements.urgency === 'priority' ? 2500 : requirements.urgency === 'urgent' ? 3000 : 2000,
         currency: "ZAR",
+        submissionDate: new Date().toISOString(),
       }
 
-      addDebugInfo(`Sending order data: ${JSON.stringify(completeOrderData)}`)
-      addDebugInfo("About to make API call to /api/linkedin/create-order")
+      addDebugInfo(`Preparing email with order data: ${JSON.stringify(completeOrderData)}`)
 
-      const response = await fetch("/api/linkedin/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(completeOrderData),
-      })
+      // Create email content
+      const emailSubject = `New LinkedIn Optimization Order - ${personalInfo.firstName} ${personalInfo.lastName}`
+      const emailBody = `
+New LinkedIn Optimization Order Received
+=====================================
 
-      addDebugInfo(`API response status: ${response.status}`)
-      addDebugInfo(`API response ok: ${response.ok}`)
+CUSTOMER INFORMATION:
+- Name: ${personalInfo.firstName} ${personalInfo.lastName}
+- Email: ${personalInfo.email}
+- Phone: ${personalInfo.phone}
+- LinkedIn URL: ${personalInfo.linkedinUrl}
 
-      if (!response.ok) {
-        const errorText = await response.text()
-        addDebugInfo(`API error response: ${errorText}`)
-        throw new Error(`Failed to create order: ${response.status} ${errorText}`)
-      }
+ORDER DETAILS:
+- Current Role: ${requirements.currentRole}
+- Target Role: ${requirements.targetRole}
+- Industry: ${requirements.industry}
+- Experience Level: ${requirements.experience}
+- Timeline: ${requirements.urgency === 'standard' ? 'Standard (5-7 days)' : 
+            requirements.urgency === 'priority' ? 'Priority (3-4 days)' : 
+            'Urgent (1-2 days)'}
+- Total Amount: R${requirements.urgency === 'priority' ? '2,500' : 
+                   requirements.urgency === 'urgent' ? '3,000' : '2,000'}
 
-      const result = await response.json()
-      addDebugInfo(`API success response: ${JSON.stringify(result)}`)
+SPECIFIC REQUIREMENTS:
+${requirements.specificRequirements || 'None specified'}
 
-      if (result.success && result.paymentData && result.paymentUrl) {
-        addDebugInfo("About to submit PayFast form")
-        submitPayFastForm(result.paymentData, result.paymentUrl)
-      } else {
-        addDebugInfo("Invalid response from server - missing required fields")
-        throw new Error("Invalid response from server")
-      }
+SUBMISSION DATE: ${new Date().toLocaleString()}
+
+Please follow up with the customer to arrange payment and begin the optimization process.
+      `.trim()
+
+      // For now, we'll use mailto (which opens the user's email client)
+      // In production, you'd want to use a proper email service like EmailJS, Resend, or SendGrid
+      const mailtoLink = `mailto:ndabegeba@gmail.com?subject=${encodeURIComponent(emailSubject)}&body=${encodeURIComponent(emailBody)}`
+      
+      addDebugInfo("Creating mailto link")
+      
+      // Simulate API call delay
+      await new Promise(resolve => setTimeout(resolve, 1000))
+      
+      // Open email client
+      window.location.href = mailtoLink
+      
+      addDebugInfo("Email client opened successfully")
+      setIsSubmitted(true)
       
     } catch (error: any) {
       addDebugInfo(`Error occurred: ${error.message}`)
       console.error(error)
-      alert(`Failed to process order: ${error.message}`)
+      alert(`Failed to submit order: ${error.message}`)
     } finally {
       setIsSubmitting(false)
       addDebugInfo("Setting isSubmitting to false")
     }
   }
 
-  const submitPayFastForm = (paymentData: any, paymentUrl: string) => {
-    addDebugInfo(`Creating PayFast form with URL: ${paymentUrl}`)
-    addDebugInfo(`PayFast data keys: ${Object.keys(paymentData).join(', ')}`)
-    
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = paymentUrl
-    form.style.display = 'none'
-
-    Object.keys(paymentData).forEach(key => {
-      if (paymentData[key] !== null && paymentData[key] !== undefined && paymentData[key] !== '') {
-        const input = document.createElement('input')
-        input.type = 'hidden'
-        input.name = key
-        input.value = paymentData[key].toString()
-        form.appendChild(input)
-        addDebugInfo(`Added form field: ${key} = ${paymentData[key]}`)
-      }
-    })
-
-    document.body.appendChild(form)
-    addDebugInfo("Form appended to body, about to submit")
-    form.submit()
-    addDebugInfo("Form submitted!")
-  }
-
   const progress = (currentStep / steps.length) * 100
+
+  // Success screen
+  if (isSubmitted) {
+    return (
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <CardTitle className="text-2xl text-green-800">Order Submitted Successfully!</CardTitle>
+          <CardDescription className="text-lg">
+            Your LinkedIn optimization request has been sent via email.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <Mail className="h-4 w-4" />
+            <AlertDescription>
+              An email with your order details has been prepared and should open in your default email client. 
+              If it didn&apos;t open automatically, please copy the order details below and send them to <strong>ndabegeba@gmail.com</strong>.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">Order Summary</h4>
+            <div className="space-y-1 text-sm">
+              <p><strong>Name:</strong> {personalInfo.firstName} {personalInfo.lastName}</p>
+              <p><strong>Email:</strong> {personalInfo.email}</p>
+              <p><strong>Phone:</strong> {personalInfo.phone}</p>
+              <p><strong>LinkedIn:</strong> {personalInfo.linkedinUrl}</p>
+              <p><strong>Current Role:</strong> {requirements.currentRole}</p>
+              <p><strong>Target Role:</strong> {requirements.targetRole}</p>
+              <p><strong>Industry:</strong> {requirements.industry}</p>
+              <p><strong>Experience:</strong> {requirements.experience}</p>
+              <p><strong>Timeline:</strong> {
+                requirements.urgency === 'standard' ? 'Standard (5-7 days)' :
+                requirements.urgency === 'priority' ? 'Priority (3-4 days)' :
+                'Urgent (1-2 days)'
+              }</p>
+              <p><strong>Total:</strong> R{
+                requirements.urgency === 'priority' ? '2,500' :
+                requirements.urgency === 'urgent' ? '3,000' : '2,000'
+              }</p>
+            </div>
+          </div>
+
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>What happens next?</strong><br />
+              1. We&apos;ll review your order and contact you within 24 hours<br />
+              2. We&apos;ll arrange payment details with you directly<br />
+              3. Once payment is confirmed, we&apos;ll begin your LinkedIn optimization<br />
+              4. You&apos;ll receive your optimized profile within the selected timeline
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex justify-center">
+            <Button onClick={() => {
+              setIsSubmitted(false)
+              setCurrentStep(1)
+              setPersonalInfo({firstName: '', lastName: '', email: '', phone: '', linkedinUrl: ''})
+              setRequirements({currentRole: '', targetRole: '', industry: '', experience: '', urgency: '', specificRequirements: ''})
+              setPayment({agreeToTerms: false})
+              setOrderData({})
+            }}>
+              Submit Another Order
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -214,7 +279,7 @@ export default function CheckoutFlow() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
-            <CardTitle>Checkout Process</CardTitle>
+            <CardTitle>Order Submission Process</CardTitle>
             <Badge variant="outline">
               Step {currentStep} of {steps.length}
             </Badge>
@@ -440,7 +505,7 @@ export default function CheckoutFlow() {
                   Back
                 </Button>
                 <Button onClick={handleRequirementsSubmit}>
-                  Continue to Payment
+                  Continue to Submit
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
               </div>
@@ -449,25 +514,25 @@ export default function CheckoutFlow() {
         </Card>
       )}
 
-      {/* Step 3: Payment */}
+      {/* Step 3: Submit Order */}
       {currentStep === 3 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-chart-1" />
-              Payment with PayFast
+              <Mail className="w-5 h-5 text-chart-1" />
+              Submit Order via Email
             </CardTitle>
             <CardDescription>
-              Secure payment processing via PayFast - South Africa&apos;s leading payment gateway.
+              Review your order details and submit via email. We&poas;ll contact you to arrange payment.
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <Alert>
-                <Shield className="h-4 w-4" />
+                <Send className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Secure PayFast Payment:</strong> Your payment will be processed securely through PayFast, 
-                  South Africa&apos;s most trusted payment gateway. You can pay with credit cards, instant EFT, or other local payment methods.
+                  <strong>Email Submission:</strong> Your order will be sent via email to our team. 
+                  We&apos;ll review your requirements and contact you within 24 hours to arrange payment and begin your LinkedIn optimization.
                 </AlertDescription>
               </Alert>
 
@@ -502,28 +567,6 @@ export default function CheckoutFlow() {
                 </div>
               </div>
 
-              {/* Payment Methods Info */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Available Payment Methods
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                  <div className="flex items-center gap-1">
-                    <span>💳</span> Credit Cards
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span>🏧</span> Instant EFT
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span>📱</span> SnapScan
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span>🏪</span> Store Cards
-                  </div>
-                </div>
-              </div>
-
               {/* Customer Details Summary */}
               <div className="bg-gray-50 p-4 rounded-lg">
                 <h4 className="font-semibold mb-2">Customer Details</h4>
@@ -544,6 +587,9 @@ export default function CheckoutFlow() {
                       requirements.urgency === 'urgent' ? '1-2 days' : 'Standard'
                     }
                   </div>
+                  <div className="md:col-span-2">
+                    <span className="font-medium">LinkedIn Profile:</span> {orderData.personalInfo?.linkedinUrl}
+                  </div>
                 </div>
               </div>
 
@@ -563,7 +609,7 @@ export default function CheckoutFlow() {
                     and{" "}
                     <a href="/privacy" target="_blank" className="text-primary hover:underline">
                       Privacy Policy
-                    </a>. I understand that payment will be processed through PayFast and I will be redirected to their secure payment page.
+                    </a>. I understand that this order will be sent via email and payment will be arranged separately.
                   </Label>
                 </div>
               </div>
@@ -576,24 +622,19 @@ export default function CheckoutFlow() {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button onClick={handlePaymentSubmit} disabled={isSubmitting} size="lg" className="px-8">
+                <Button onClick={handleOrderSubmit} disabled={isSubmitting} size="lg" className="px-8">
                   {isSubmitting ? (
                     <>
                       <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
+                      Submitting...
                     </>
                   ) : (
                     <>
-                      Proceed to PayFast - {
-                        requirements.urgency === 'priority' ? 'R2,500' :
-                        requirements.urgency === 'urgent' ? 'R3,000' : 'R2,000'
-                      }
+                      <Send className="w-4 h-4 mr-2" />
+                      Submit Order via Email
                     </>
                   )}
                 </Button>
-                <p>
-                  <PayButton />
-                </p>
               </div>
             </div>
           </CardContent>

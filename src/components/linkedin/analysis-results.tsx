@@ -29,6 +29,7 @@ import {
 import { createCheckoutSession } from "../premium/actions";
 import { toast } from "sonner";
 import { useState } from "react";
+import Link from "next/link";
 
 interface AnalysisResultsProps {
   profile: any;
@@ -73,8 +74,8 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
   // }
 
   const handlePaymentSubmit = async (priceId: string) => {
-    setIsSubmitting(true)
-  
+    setIsSubmitting(true);
+
     try {
       // Combine all form data
       // const orderData = {
@@ -85,7 +86,7 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
       //   currency: "ZAR",
       //   status: 'pending' // Add status field
       // }
-  
+
       // First, save the order data to database
       const response = await fetch("/api/linkedin/create-order", {
         method: "POST",
@@ -93,78 +94,77 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(priceId),
-      })
-  
+      });
+
       if (!response.ok) {
-        throw new Error("Failed to create order")
+        throw new Error("Failed to create order");
       }
-  
-      const result = await response.json()
-      const orderId = result.orderId
-  
+
+      const result = await response.json();
+      const orderId = result.orderId;
+
       // Then redirect to Stripe with the order ID
       const sessionUrl = await createCheckoutSession(
         process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!,
         //orderId! // Pass order ID to Stripe metadata
-      )
-      
-      window.location.href = sessionUrl
-      
+      );
+
+      window.location.href = sessionUrl;
     } catch (error) {
-      console.error(error)
-      toast.error("Failed to process order")
+      console.error(error);
+      toast.error("Failed to process order");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  };
 
   async function handleDownloadPDF() {
     console.log("handleDownloadPDF clicked");
-    
+
     try {
       setIsDownloading(true);
 
       console.log(report);
-      
-      
+
       // Make request to your API endpoint
-      const response = await fetch(`/api/linkedin/download-report/pdf?reportId=${report.id}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/pdf',
+      const response = await fetch(
+        `/api/linkedin/download-report/pdf?reportId=${report.id}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/pdf",
+          },
         },
-      });
+      );
 
       if (!response.ok) {
-        throw new Error('Failed to generate PDF report');
+        throw new Error("Failed to generate PDF report");
       }
 
       // Get the PDF blob
       const blob = await response.blob();
-      
+
       // Create download link
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
+      const link = document.createElement("a");
       link.href = url;
       link.download = `linkedin-analysis-report-${report.id}.pdf`;
 
       console.log(link);
-      
-      
+
       // Trigger download
       document.body.appendChild(link);
       link.click();
-      
+
       // Cleanup
       link.remove();
       window.URL.revokeObjectURL(url);
-      
+
       toast.success("PDF report downloaded successfully!", {
         position: "top-right",
       });
-
     } catch (error) {
-      console.error('Download error:', error);
+      console.error("Download error:", error);
       toast.error("Failed to download PDF report. Please try again.", {
         position: "top-right",
       });
@@ -172,7 +172,6 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
       setIsDownloading(false);
     }
   }
-
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -773,29 +772,36 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
               <Button
                 size="lg"
                 className="px-8"
-                onClick={() =>
-                  handlePaymentSubmit
-                }
+                onClick={() => handlePaymentSubmit}
                 type="submit"
                 disabled={isSubmitting}
               >
                 Get Professional Optimization - R2,000
                 <ArrowRight className="ml-2 h-4 w-4" />
               </Button>
-              <Button 
-              onClick={() => handleDownloadPDF()}
-              variant="outline" size="lg">
+              <Button
+                onClick={() => handleDownloadPDF()}
+                variant="destructive"
+                size="lg"
+              >
                 <Download className="mr-2 h-4 w-4" />
                 Download Report PDF
               </Button>
+              <Link href="/linkedin-optimizer">
+                <Button variant="emerald" size="lg">
+                  <Download className="mr-2 h-4 w-4" />
+                  Upload Another Test
+                </Button>
+              </Link>
             </div>
 
             <Alert>
-              <AlertTriangle className="h-4 w-4  text-red-700" />
+              <AlertTriangle className="h-4 w-4 text-red-700" />
 
               <AlertDescription>
-                <strong className="text-red-500">Limited Time:</strong> Book your consultation within 7
-                days and receive a free LinkedIn banner design worth R500!
+                <strong className="text-red-500">Limited Time:</strong> Book
+                your consultation within 7 days and receive a free LinkedIn
+                banner design worth R500!
               </AlertDescription>
             </Alert>
           </CardContent>
