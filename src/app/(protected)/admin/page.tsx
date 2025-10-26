@@ -20,7 +20,7 @@ import {
   Cell,
   BarChart,
 } from "recharts"
-import { DollarSign, Users, TrendingUp, Star, AlertCircle, CheckCircle, UserCheck, Target } from "lucide-react"
+import { Users, TrendingUp, Star, AlertCircle, CheckCircle, UserCheck, Target, Banknote } from "lucide-react"
 
 interface DashboardStats {
   totalRevenue: number
@@ -78,7 +78,7 @@ export default function ManagerDashboard() {
         fetch(`/api/admin/dashboard/stats?timeRange=${timeRange}`),
         fetch(`/api/admin/dashboard/consultant-performance?timeRange=${timeRange}`),
         fetch(`/api/admin/dashboard/revenue-chart?timeRange=${timeRange}`),
-        fetch(`/api/admin/dashboard/order-status?timeRange=${timeRange}`),
+        fetch(`/api/admin/order-status?timeRange=${timeRange}`),
       ])
 
       const statsData = await statsRes.json()
@@ -175,7 +175,7 @@ export default function ManagerDashboard() {
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
+              <Banknote className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{formatCurrency(stats.totalRevenue)}</div>

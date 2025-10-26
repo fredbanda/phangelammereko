@@ -15,8 +15,8 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s - Sebenza Mmereko",
-    absolute: "SebenzaMmereko",
+    template: "%s - CareerForty - No time for a good career",
+    absolute: "CareerForty",
   },
   description:
     "Looking for a job is hard but creating your CVs shouldn&pos;t be",
