@@ -1,7 +1,4 @@
-<<<<<<< HEAD
-=======
 /* eslint-disable @typescript-eslint/no-explicit-any */
->>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
 "use client"
 
 import { useState } from "react"
@@ -355,11 +352,8 @@ export default function OrderStatusManager({ isOpen, onClose, order, onUpdateSta
                 {order.consultant && (
                   <div className="flex items-center gap-3 text-sm">
                     <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-<<<<<<< HEAD
-                    <span className="text-muted-foreground">{new Date(order.updatedAt).toLocaleString()}</span>
-=======
+
                     <span className="text-muted-foreground">{new Date(order.createdAt).toLocaleString()}</span>
->>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
                     <span>Assigned to {order.consultant.name}</span>
                   </div>
                 )}

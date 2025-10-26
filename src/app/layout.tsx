@@ -15,11 +15,12 @@ const inter = Inter({
 
 export const metadata: Metadata = {
   title: {
-    template: "%s - CareerForty - No time for a good career",
-    absolute: "CareerForty",
+    template: "CareerForty | %s",
+    absolute:
+      "CareerForty | Resume Builder & LinkedIn Optimization for Job Seekers",
   },
   description:
-    "Looking for a job is hard but creating your CVs shouldn&pos;t be",
+    "Create a professional resume, optimize your LinkedIn profile, and boost your job search confidence with CareerForty — designed for mid-career professionals and every job seeker aiming higher.",
   keywords: "resume, cv, job, phangela, phangela mmereko, free cv",
 };
 

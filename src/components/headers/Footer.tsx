@@ -44,7 +44,7 @@ export default function Footer() {
               <h2 className="inline-block text-2xl pb-4 mb-4 border-b-4 border-blue-600">In The News</h2>
             </div>
             <ul className="leading-8">
-              <li><a href="#" className="hover:text-blue-400">Getting Started With HTML and CSS</a></li>
+              <li><a href="#" className="hover:text-blue-400">How To Get The Best Out of Linkedin Profile</a></li>
               <li><a href="#" className="hover:text-blue-400">What Is Flex And When to Use It?</a></li>
               <li><a href="#" className="hover:text-blue-400">How TailwindCSS Can Help Your Productivity?</a></li>
               <li><a href="#" className="hover:text-blue-400">5 Tips to Make Responsive Website</a></li>

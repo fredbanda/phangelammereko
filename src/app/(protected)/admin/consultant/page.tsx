@@ -1,8 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { addConsultant, getConsultants } from '@/actions/consultantActions';
-import { Consultant } from '@prisma/client';
+import { addConsultant} from '@/actions/consultantActions';
 import { useRouter } from 'next/navigation';
 
 interface ConsultantFormData {
@@ -92,6 +91,8 @@ export default function ConsultantForm() {
         }
       } catch (err) {
         setError('An unexpected error occurred');
+        console.log(err);
+        
       }
     });
   };

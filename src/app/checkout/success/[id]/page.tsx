@@ -20,27 +20,33 @@ export const metadata: Metadata = {
   description: "Your LinkedIn optimization order has been confirmed",
 };
 
+type Params = Promise<{ id: string }>;
+
 interface SuccessPageProps {
-  searchParams: Promise<{
-    orderId?: string;
-    session_id?: string;
-  }>;
+  params: Params;
 }
 
 async function getOrderFromStripeSession(sessionId: string) {
   try {
-    // Get session from Stripe
-    const session = await stripe.checkout.sessions.retrieve(sessionId);
+    console.log("Retrieving Stripe session:", sessionId);
+
+    const session = await stripe.checkout.sessions.retrieve(sessionId, {
+      expand: ["line_items", "customer"],
+    });
+
+    console.log("Stripe session retrieved:", {
+      id: session.id,
+      payment_status: session.payment_status,
+      metadata: session.metadata,
+    });
 
     if (!session) {
       return null;
     }
 
-    // Find or update order based on session
     let order;
 
     if (session.metadata?.orderId) {
-      // Update existing order
       order = await prisma.consultationOrder.update({
         where: { id: session.metadata.orderId },
         data: {
@@ -52,24 +58,19 @@ async function getOrderFromStripeSession(sessionId: string) {
         },
         include: { user: true },
       });
-    } else if (session.metadata?.orderData) {
-      // Create order from session metadata (fallback)
-      const orderData = JSON.parse(session.metadata.orderData);
-
-      // You need to provide a userId here - either from session metadata or find by email
+    } else if (session.metadata?.userId || session.customer_email) {
       let userId = session.metadata?.userId;
 
-      if (!userId && orderData.clientEmail) {
-        // Try to find or create user by email
+      if (!userId && session.customer_email) {
         let user = await prisma.user.findUnique({
-          where: { email: orderData.clientEmail },
+          where: { email: session.customer_email },
         });
 
         if (!user) {
           user = await prisma.user.create({
             data: {
-              email: orderData.clientEmail,
-              name: orderData.clientName,
+              email: session.customer_email,
+              name: session.customer_details?.name || "Customer",
             },
           });
         }
@@ -80,14 +81,22 @@ async function getOrderFromStripeSession(sessionId: string) {
         throw new Error("Unable to determine userId for order creation");
       }
 
+      const requirements = session.metadata?.requirements
+        ? JSON.parse(session.metadata.requirements)
+        : {};
+
       order = await prisma.consultationOrder.create({
         data: {
           userId,
-          clientName: orderData.clientName,
-          clientEmail: orderData.clientEmail,
-          requirements: orderData.requirements || {},
-          amount: orderData.amount,
-          currency: orderData.currency || "ZAR",
+          clientName:
+            session.customer_details?.name ||
+            session.metadata?.clientName ||
+            "Customer",
+          clientEmail:
+            session.customer_email || session.metadata?.clientEmail || "",
+          requirements: requirements,
+          amount: session.amount_total || 200000,
+          currency: session.currency?.toUpperCase() || "ZAR",
           paymentStatus: session.payment_status === "paid" ? "PAID" : "PENDING",
           consultationStatus:
             session.payment_status === "paid" ? "IN_PROGRESS" : "PENDING",
@@ -104,30 +113,39 @@ async function getOrderFromStripeSession(sessionId: string) {
   }
 }
 
-export default async function SuccessPage(props: SuccessPageProps) {
-  // In Next.js 15, searchParams is now a promise
-  const searchParams = await props.searchParams;
-  const orderId = searchParams?.orderId;
-  const sessionId = searchParams?.session_id;
+export default async function SuccessPage({ params }: SuccessPageProps) {
+  const { id } = await params;
 
-  let order;
+  console.log("Success page ID:", id);
 
-  if (orderId) {
-    // Direct order ID access (existing flow)
-    order = await prisma.consultationOrder.findUnique({
-      where: { id: orderId },
-      include: { user: true },
-    });
-  } else if (sessionId) {
-    // Stripe session redirect (new flow)
-    order = await getOrderFromStripeSession(sessionId);
-  }
-
-  if (!order) {
+  if (!id) {
+    console.error("No ID provided");
     notFound();
   }
 
-  // Handle case where requirements might not be properly structured
+  let order;
+
+  try {
+    // Try to fetch as order ID first
+    order = await prisma.consultationOrder.findUnique({
+      where: { id },
+      include: { user: true },
+    });
+
+    // If not found, try as Stripe session ID
+    if (!order) {
+      console.log("Not found as order ID, trying as session ID");
+      order = await getOrderFromStripeSession(id);
+    }
+  } catch (error) {
+    console.error("Error fetching order:", error);
+  }
+
+  if (!order) {
+    console.error("Order not found");
+    notFound();
+  }
+
   let requirements: any = {};
   try {
     requirements =
@@ -156,7 +174,6 @@ export default async function SuccessPage(props: SuccessPageProps) {
     <div className="bg-background min-h-screen">
       <div className="container mx-auto px-4 py-8">
         <div className="mx-auto max-w-4xl">
-          {/* Success Header */}
           <div className="mb-8 text-center">
             <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
               <CheckCircle className="h-8 w-8 text-green-600" />
@@ -170,7 +187,6 @@ export default async function SuccessPage(props: SuccessPageProps) {
             </p>
           </div>
 
-          {/* Order Details */}
           <Card className="mb-8">
             <CardHeader>
               <CardTitle className="flex items-center justify-between">
@@ -188,7 +204,9 @@ export default async function SuccessPage(props: SuccessPageProps) {
                   <div className="space-y-1 text-sm">
                     <p>
                       <strong>Name:</strong>{" "}
-                      {requirements.personalInfo?.firstName || "N/A"}{" "}
+                      {requirements.personalInfo?.firstName ||
+                        order.clientName ||
+                        "N/A"}{" "}
                       {requirements.personalInfo?.lastName || ""}
                     </p>
                     <p>
@@ -228,7 +246,6 @@ export default async function SuccessPage(props: SuccessPageProps) {
                 </div>
               </div>
 
-              {/* Payment Status */}
               <div className="border-t pt-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -249,7 +266,6 @@ export default async function SuccessPage(props: SuccessPageProps) {
             </CardContent>
           </Card>
 
-          {/* Next Steps */}
           <Card className="mb-8">
             <CardHeader>
               <CardTitle>What Happens Next?</CardTitle>
@@ -346,7 +362,6 @@ export default async function SuccessPage(props: SuccessPageProps) {
             </CardContent>
           </Card>
 
-          {/* Support & Actions */}
           <div className="grid gap-6 md:grid-cols-2">
             <Card>
               <CardHeader>

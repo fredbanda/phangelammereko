@@ -84,6 +84,9 @@ export default function OrderManagement() {
     fetchConsultants()
   }, [])
 
+  console.log(consultants);
+  
+
   const fetchOrders = async () => {
     try {
       const response = await fetch("/api/admin-link/orders")

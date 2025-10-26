@@ -1,21 +1,36 @@
-"use client"
+"use client";
 
-/* eslint-disable @typescript-eslint/no-explicit-any */
-/* eslint-disable @typescript-eslint/no-unused-vars */
-import { useState, useRef } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Textarea } from "@/components/ui/textarea"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Progress } from "@/components/ui/progress"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ArrowRight, CreditCard, User, FileText, CheckCircle } from "lucide-react"
-import {toast} from "sonner"
-import { createCheckoutSession } from "../premium/actions"
-
+import { useState } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Badge } from "@/components/ui/badge";
+import {
+  ArrowLeft,
+  ArrowRight,
+  CreditCard,
+  User,
+  FileText,
+  CheckCircle,
+  AlertCircle,
+  Mail,
+} from "lucide-react";
+import { toast } from "sonner";
+import { createCheckoutSession } from "../premium/actions";
+import { z } from "zod";
+import { useForm } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
 
 const personalInfoSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
@@ -23,7 +38,7 @@ const personalInfoSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   phone: z.string().min(10, "Please enter a valid phone number"),
   linkedinUrl: z.string().url("Please enter a valid LinkedIn URL"),
-})
+});
 
 const requirementsSchema = z.object({
   currentRole: z.string().min(2, "Please enter your current role"),
@@ -32,95 +47,79 @@ const requirementsSchema = z.object({
   experience: z.string().min(1, "Please select your experience level"),
   specificRequirements: z.string().optional(),
   urgency: z.string().min(1, "Please select urgency level"),
-})
+});
 
 const paymentSchema = z.object({
-  cardNumber: z.string().min(16, "Please enter a valid card number"),
-  expiryDate: z.string().min(5, "Please enter expiry date (MM/YY)"),
-  cvv: z.string().min(3, "Please enter CVV"),
   cardholderName: z.string().min(2, "Please enter cardholder name"),
   billingAddress: z.string().min(5, "Please enter billing address"),
   city: z.string().min(2, "Please enter city"),
   postalCode: z.string().min(4, "Please enter postal code"),
-  agreeToTerms: z.boolean().refine((val) => val === true, "You must agree to the terms and conditions"),
-})
+  agreeToTerms: z
+    .boolean()
+    .refine(
+      (val) => val === true,
+      "You must agree to the terms and conditions",
+    ),
+});
 
-type PersonalInfo = z.infer<typeof personalInfoSchema>
-type Requirements = z.infer<typeof requirementsSchema>
-type Payment = z.infer<typeof paymentSchema>
+type PersonalInfo = z.infer<typeof personalInfoSchema>;
+type Requirements = z.infer<typeof requirementsSchema>;
+type Payment = z.infer<typeof paymentSchema>;
 
-export function CheckoutFlow() {
-  const [currentStep, setCurrentStep] = useState(1)
-  const [isSubmitting, setIsSubmitting] = useState(false)
-    const [loading, setLoading] = useState(false);
-
+// Changed to default export
+export default function CheckoutFlow() {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [isSubmitted, setIsSubmitted] = useState(false);
 
   const personalForm = useForm<PersonalInfo>({
     resolver: zodResolver(personalInfoSchema),
-  })
+  });
 
-  const [requirements, setRequirements] = useState({
-    currentRole: '',
-    targetRole: '',
-    industry: '',
-    experience: '',
-    urgency: '',
-    specificRequirements: ''
-  })
+  const requirementsForm = useForm<Requirements>({
+    resolver: zodResolver(requirementsSchema),
+  });
 
-  const [payment, setPayment] = useState({
-    agreeToTerms: false
-  })
-
-  const addDebugInfo = (message: string) => {
-    setDebugInfo(prev => [...prev, `${new Date().toLocaleTimeString()}: ${message}`])
-  }
+  const paymentForm = useForm<Payment>({
+    resolver: zodResolver(paymentSchema),
+  });
 
   const steps = [
     { number: 1, title: "Personal Information", icon: User },
     { number: 2, title: "Requirements", icon: FileText },
     { number: 3, title: "Submit Order", icon: Mail },
-  ]
+  ];
 
-  const handlePersonalInfoSubmit = () => {
-    addDebugInfo("Personal info form submitted")
-    
-    const validation = validatePersonalInfo(personalInfo)
-    setErrors(validation.errors)
-    
-    if (validation.isValid) {
-      addDebugInfo("Personal info validation passed")
-      setOrderData(prev => ({ ...prev, personalInfo }))
-      setCurrentStep(2)
-      addDebugInfo("Moved to step 2")
-    } else {
-      addDebugInfo("Personal info validation failed")
+  const handlePersonalInfoSubmit = personalForm.handleSubmit((data) => {
+    console.log("Personal info:", data);
+    setCurrentStep(2);
+  });
+
+  const handleRequirementsSubmit = requirementsForm.handleSubmit((data) => {
+    console.log("Requirements:", data);
+    setCurrentStep(3);
+  });
+
+  async function handlePremiumClick() {
+    try {
+      setLoading(true);
+      const priceId =
+        process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!;
+      const sessionUrl = await createCheckoutSession(priceId);
+      window.location.href = sessionUrl;
+    } catch (error) {
+      console.log(error);
+      toast.error("Something went wrong while creating the checkout session", {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
-  const handleRequirementsSubmit = (data: Requirements) => {
-    console.log("Requirements:", data)
-    setCurrentStep(3)
-  }
-
-  async function handlePremiumClick(priceId: string) {
-      try {
-          setLoading(true);
-          const sessionUrl = await createCheckoutSession(priceId);
-          window.location.href = sessionUrl;
-      } catch (error) {
-          console.log(error);
-          toast.error("Something went wrong while creating the checkout session", {
-            position: "top-right",
-          });
-          
-      }finally{
-          setLoading(false);
-      }
-    }
-
-  const handlePaymentSubmit = async (data: Payment) => {
-    setIsSubmitting(true)
+  const handlePaymentSubmit = paymentForm.handleSubmit(async (data) => {
+    setIsSubmitting(true);
 
     try {
       // Combine all form data
@@ -130,7 +129,7 @@ export function CheckoutFlow() {
         payment: data,
         amount: 200000, // R2000 in cents
         currency: "ZAR",
-      }
+      };
 
       const response = await fetch("/api/linkedin/create-order", {
         method: "POST",
@@ -138,40 +137,39 @@ export function CheckoutFlow() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify(orderData),
-      })
+      });
 
       if (!response.ok) {
-        throw new Error("Failed to create order")
+        throw new Error("Failed to create order");
       }
 
-      const result = await response.json()
+      const result = await response.json();
 
-    //   toast({
-    //     title: "Order created successfully!",
-    //     description: "You will receive a confirmation email shortly with next steps.",
-    //   })
-
-      // Redirect to success page
-      window.location.href = `/linkedin-optimizer/checkout/success?orderId=${result.orderId}`
+      window.location.href = `/linkedin-optimizer/checkout/success?orderId=${result.orderId}`;
     } catch (error) {
-        console.error(error)
-      toast.error("Payment failed")
+      console.error(error);
+      toast.error("Payment failed");
     } finally {
-      setIsSubmitting(false)
+      setIsSubmitting(false);
     }
-  }
+  });
 
-  const progress = (currentStep / steps.length) * 100
+  const progress = (currentStep / steps.length) * 100;
 
   // Success screen
   if (isSubmitted) {
+    const personalInfo = personalForm.getValues();
+    const requirements = requirementsForm.getValues();
+
     return (
-      <Card className="max-w-2xl mx-auto">
+      <Card className="mx-auto max-w-2xl">
         <CardHeader className="text-center">
-          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <CheckCircle className="w-8 h-8 text-green-600" />
+          <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
+            <CheckCircle className="h-8 w-8 text-green-600" />
           </div>
-          <CardTitle className="text-2xl text-green-800">Order Submitted Successfully!</CardTitle>
+          <CardTitle className="text-2xl text-green-800">
+            Order Submitted Successfully!
+          </CardTitle>
           <CardDescription className="text-lg">
             Your LinkedIn optimization request has been sent via email.
           </CardDescription>
@@ -180,60 +178,94 @@ export function CheckoutFlow() {
           <Alert>
             <Mail className="h-4 w-4" />
             <AlertDescription>
-              An email with your order details has been prepared and should open in your default email client. 
-              If it didn&apos;t open automatically, please copy the order details below and send them to <strong>ndabegeba@gmail.com</strong>.
+              An email with your order details has been prepared and should open
+              in your default email client. If it didn&apos;t open
+              automatically, please copy the order details below and send them
+              to <strong>ndabegeba@gmail.com</strong>.
             </AlertDescription>
           </Alert>
-          
-          <div className="bg-gray-50 p-4 rounded-lg">
-            <h4 className="font-semibold mb-2">Order Summary</h4>
+
+          <div className="rounded-lg bg-gray-50 p-4">
+            <h4 className="mb-2 font-semibold">Order Summary</h4>
             <div className="space-y-1 text-sm">
-              <p><strong>Name:</strong> {personalInfo.firstName} {personalInfo.lastName}</p>
-              <p><strong>Email:</strong> {personalInfo.email}</p>
-              <p><strong>Phone:</strong> {personalInfo.phone}</p>
-              <p><strong>LinkedIn:</strong> {personalInfo.linkedinUrl}</p>
-              <p><strong>Current Role:</strong> {requirements.currentRole}</p>
-              <p><strong>Target Role:</strong> {requirements.targetRole}</p>
-              <p><strong>Industry:</strong> {requirements.industry}</p>
-              <p><strong>Experience:</strong> {requirements.experience}</p>
-              <p><strong>Timeline:</strong> {
-                requirements.urgency === 'standard' ? 'Standard (5-7 days)' :
-                requirements.urgency === 'priority' ? 'Priority (3-4 days)' :
-                'Urgent (1-2 days)'
-              }</p>
-              <p><strong>Total:</strong> R{
-                requirements.urgency === 'priority' ? '2,500' :
-                requirements.urgency === 'urgent' ? '3,000' : '2,000'
-              }</p>
+              <p>
+                <strong>Name:</strong> {personalInfo.firstName}{" "}
+                {personalInfo.lastName}
+              </p>
+              <br />
+              <p>
+                <strong>Email:</strong> {personalInfo.email}
+              </p>
+              <p>
+                <strong>Phone:</strong> {personalInfo.phone}
+              </p>
+              <p>
+                <strong>LinkedIn:</strong> {personalInfo.linkedinUrl}
+              </p>
+              <p>
+                <strong>Current Role:</strong> {requirements.currentRole}
+              </p>
+              <p>
+                <strong>Target Role:</strong> {requirements.targetRole}
+              </p>
+              <p>
+                <strong>Industry:</strong> {requirements.industry}
+              </p>
+              <p>
+                <strong>Experience:</strong> {requirements.experience}
+              </p>
+              <p>
+                <strong>Timeline:</strong>{" "}
+                {requirements.urgency === "standard"
+                  ? "Standard (5-7 days)"
+                  : requirements.urgency === "priority"
+                    ? "Priority (3-4 days)"
+                    : "Urgent (1-2 days)"}
+              </p>
+              <p>
+                <strong>Total:</strong> R
+                {requirements.urgency === "priority"
+                  ? "2,500"
+                  : requirements.urgency === "urgent"
+                    ? "3,000"
+                    : "2,000"}
+              </p>
             </div>
           </div>
 
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription>
-              <strong>What happens next?</strong><br />
-              1. We&apos;ll review your order and contact you within 24 hours<br />
-              2. We&apos;ll arrange payment details with you directly<br />
-              3. Once payment is confirmed, we&apos;ll begin your LinkedIn optimization<br />
-              4. You&apos;ll receive your optimized profile within the selected timeline
+              <strong>What happens next?</strong>
+              <br />
+              1. We&apos;ll review your order and contact you within 24 hours
+              <br />
+              2. We&apos;ll arrange payment details with you directly
+              <br />
+              3. Once payment is confirmed, we&apos;ll begin your LinkedIn
+              optimization
+              <br />
+              4. You&apos;ll receive your optimized profile within the selected
+              timeline
             </AlertDescription>
           </Alert>
 
           <div className="flex justify-center">
-            <Button onClick={() => {
-              setIsSubmitted(false)
-              setCurrentStep(1)
-              setPersonalInfo({firstName: '', lastName: '', email: '', phone: '', linkedinUrl: ''})
-              setRequirements({currentRole: '', targetRole: '', industry: '', experience: '', urgency: '', specificRequirements: ''})
-              setPayment({agreeToTerms: false})
-              setOrderData({})
-            }}>
+            <Button
+              onClick={() => {
+                setIsSubmitted(false);
+                setCurrentStep(1);
+                personalForm.reset();
+                requirementsForm.reset();
+                paymentForm.reset();
+              }}
+            >
               Submit Another Order
             </Button>
           </div>
         </CardContent>
       </Card>
-    )
+    );
   }
 
   return (
@@ -241,7 +273,7 @@ export function CheckoutFlow() {
       {/* Progress Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between mb-4">
+          <div className="mb-4 flex items-center justify-between">
             <CardTitle>Order Submission Process</CardTitle>
             <Badge variant="outline">
               Step {currentStep} of {steps.length}
@@ -253,17 +285,27 @@ export function CheckoutFlow() {
               <div
                 key={step.number}
                 className={`flex items-center gap-2 ${
-                  step.number <= currentStep ? "text-primary" : "text-muted-foreground"
+                  step.number <= currentStep
+                    ? "text-primary"
+                    : "text-muted-foreground"
                 }`}
               >
                 <div
-                  className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                    step.number <= currentStep ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                  className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-bold ${
+                    step.number <= currentStep
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-muted text-muted-foreground"
                   }`}
                 >
-                  {step.number < currentStep ? <CheckCircle className="w-4 h-4" /> : step.number}
+                  {step.number < currentStep ? (
+                    <CheckCircle className="h-4 w-4" />
+                  ) : (
+                    step.number
+                  )}
                 </div>
-                <span className="text-sm font-medium hidden sm:block">{step.title}</span>
+                <span className="hidden text-sm font-medium sm:block">
+                  {step.title}
+                </span>
               </div>
             ))}
           </div>
@@ -275,63 +317,65 @@ export function CheckoutFlow() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <User className="w-5 h-5 text-primary" />
+              <User className="text-primary h-5 w-5" />
               Personal Information
             </CardTitle>
             <CardDescription>
-              We need your details to schedule your consultation and deliver your optimized profile.
+              We need your details to schedule your consultation and deliver
+              your optimized profile.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+            <form onSubmit={handlePersonalInfoSubmit} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="firstName">First Name *</Label>
-                  <Input 
-                    id="firstName" 
-                    value={personalInfo.firstName}
-                    onChange={(e) => setPersonalInfo(prev => ({...prev, firstName: e.target.value}))}
+                  <Input
+                    id="firstName"
+                    {...personalForm.register("firstName")}
                   />
-                  {errors.firstName && (
-                    <p className="text-sm text-destructive mt-1">{errors.firstName}</p>
+                  {personalForm.formState.errors.firstName && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {personalForm.formState.errors.firstName.message}
+                    </p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="lastName">Last Name *</Label>
-                  <Input 
-                    id="lastName" 
-                    value={personalInfo.lastName}
-                    onChange={(e) => setPersonalInfo(prev => ({...prev, lastName: e.target.value}))}
-                  />
-                  {errors.lastName && (
-                    <p className="text-sm text-destructive mt-1">{errors.lastName}</p>
+                  <Input id="lastName" {...personalForm.register("lastName")} />
+                  {personalForm.formState.errors.lastName && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {personalForm.formState.errors.lastName.message}
+                    </p>
                   )}
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="email">Email Address *</Label>
-                  <Input 
-                    id="email" 
-                    type="email" 
-                    value={personalInfo.email}
-                    onChange={(e) => setPersonalInfo(prev => ({...prev, email: e.target.value}))}
+                  <Input
+                    id="email"
+                    type="email"
+                    {...personalForm.register("email")}
                   />
-                  {errors.email && (
-                    <p className="text-sm text-destructive mt-1">{errors.email}</p>
+                  {personalForm.formState.errors.email && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {personalForm.formState.errors.email.message}
+                    </p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="phone">Phone Number *</Label>
-                  <Input 
-                    id="phone" 
-                    placeholder="e.g., 0821234567" 
-                    value={personalInfo.phone}
-                    onChange={(e) => setPersonalInfo(prev => ({...prev, phone: e.target.value}))}
+                  <Input
+                    id="phone"
+                    placeholder="e.g., 0821234567"
+                    {...personalForm.register("phone")}
                   />
-                  {errors.phone && (
-                    <p className="text-sm text-destructive mt-1">{errors.phone}</p>
+                  {personalForm.formState.errors.phone && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {personalForm.formState.errors.phone.message}
+                    </p>
                   )}
                 </div>
               </div>
@@ -341,21 +385,22 @@ export function CheckoutFlow() {
                 <Input
                   id="linkedinUrl"
                   placeholder="https://linkedin.com/in/yourname"
-                  value={personalInfo.linkedinUrl}
-                  onChange={(e) => setPersonalInfo(prev => ({...prev, linkedinUrl: e.target.value}))}
+                  {...personalForm.register("linkedinUrl")}
                 />
-                {errors.linkedinUrl && (
-                  <p className="text-sm text-destructive mt-1">{errors.linkedinUrl}</p>
+                {personalForm.formState.errors.linkedinUrl && (
+                  <p className="text-destructive mt-1 text-sm">
+                    {personalForm.formState.errors.linkedinUrl.message}
+                  </p>
                 )}
               </div>
 
               <div className="flex justify-end">
-                <Button onClick={handlePersonalInfoSubmit}>
+                <Button type="submit">
                   Continue to Requirements
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-            </div>
+            </form>
           </CardContent>
         </Card>
       )}
@@ -365,26 +410,28 @@ export function CheckoutFlow() {
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-accent" />
+              <FileText className="text-accent h-5 w-5" />
               Optimization Requirements
             </CardTitle>
             <CardDescription>
-              Tell us about your goals so we can provide the most relevant optimization.
+              Tell us about your goals so we can provide the most relevant
+              optimization.
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
+            <form onSubmit={handleRequirementsSubmit} className="space-y-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="currentRole">Current Role *</Label>
                   <Input
                     id="currentRole"
                     placeholder="e.g., Software Engineer"
-                    value={requirements.currentRole}
-                    onChange={(e) => setRequirements(prev => ({...prev, currentRole: e.target.value}))}
+                    {...requirementsForm.register("currentRole")}
                   />
-                  {errors.currentRole && (
-                    <p className="text-sm text-destructive mt-1">{errors.currentRole}</p>
+                  {requirementsForm.formState.errors.currentRole && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {requirementsForm.formState.errors.currentRole.message}
+                    </p>
                   )}
                 </div>
                 <div>
@@ -392,34 +439,35 @@ export function CheckoutFlow() {
                   <Input
                     id="targetRole"
                     placeholder="e.g., Senior Software Engineer"
-                    value={requirements.targetRole}
-                    onChange={(e) => setRequirements(prev => ({...prev, targetRole: e.target.value}))}
+                    {...requirementsForm.register("targetRole")}
                   />
-                  {errors.targetRole && (
-                    <p className="text-sm text-destructive mt-1">{errors.targetRole}</p>
+                  {requirementsForm.formState.errors.targetRole && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {requirementsForm.formState.errors.targetRole.message}
+                    </p>
                   )}
                 </div>
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="industry">Industry *</Label>
                   <Input
                     id="industry"
                     placeholder="e.g., Information Technology"
-                    value={requirements.industry}
-                    onChange={(e) => setRequirements(prev => ({...prev, industry: e.target.value}))}
+                    {...requirementsForm.register("industry")}
                   />
-                  {errors.industry && (
-                    <p className="text-sm text-destructive mt-1">{errors.industry}</p>
+                  {requirementsForm.formState.errors.industry && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {requirementsForm.formState.errors.industry.message}
+                    </p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="experience">Years of Experience *</Label>
-                  <select 
-                    className="w-full p-2 border rounded-md" 
-                    value={requirements.experience}
-                    onChange={(e) => setRequirements(prev => ({...prev, experience: e.target.value}))}
+                  <select
+                    className="w-full rounded-md border p-2"
+                    {...requirementsForm.register("experience")}
                   >
                     <option value="">Select experience level</option>
                     <option value="0-2">0-2 years</option>
@@ -428,89 +476,101 @@ export function CheckoutFlow() {
                     <option value="8-12">8-12 years</option>
                     <option value="12+">12+ years</option>
                   </select>
-                  {errors.experience && (
-                    <p className="text-sm text-destructive mt-1">{errors.experience}</p>
+                  {requirementsForm.formState.errors.experience && (
+                    <p className="text-destructive mt-1 text-sm">
+                      {requirementsForm.formState.errors.experience.message}
+                    </p>
                   )}
                 </div>
               </div>
 
               <div>
                 <Label htmlFor="urgency">Timeline *</Label>
-                <select 
-                  className="w-full p-2 border rounded-md" 
-                  value={requirements.urgency}
-                  onChange={(e) => setRequirements(prev => ({...prev, urgency: e.target.value}))}
+                <select
+                  className="w-full rounded-md border p-2"
+                  {...requirementsForm.register("urgency")}
                 >
                   <option value="">Select timeline</option>
                   <option value="standard">Standard (5-7 days) - R2,000</option>
                   <option value="priority">Priority (3-4 days) - R2,500</option>
                   <option value="urgent">Urgent (1-2 days) - R3,000</option>
                 </select>
-                {errors.urgency && (
-                  <p className="text-sm text-destructive mt-1">{errors.urgency}</p>
+                {requirementsForm.formState.errors.urgency && (
+                  <p className="text-destructive mt-1 text-sm">
+                    {requirementsForm.formState.errors.urgency.message}
+                  </p>
                 )}
               </div>
 
               <div>
-                <Label htmlFor="specificRequirements">Specific Requirements (Optional)</Label>
+                <Label htmlFor="specificRequirements">
+                  Specific Requirements (Optional)
+                </Label>
                 <Textarea
                   id="specificRequirements"
                   placeholder="Any specific goals, challenges, or requirements for your LinkedIn optimization..."
                   rows={4}
-                  value={requirements.specificRequirements}
-                  onChange={(e) => setRequirements(prev => ({...prev, specificRequirements: e.target.value}))}
+                  {...requirementsForm.register("specificRequirements")}
                 />
               </div>
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setCurrentStep(1)}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentStep(1)}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
                 <Button type="submit">
                   Continue to Payment
-                  <ArrowRight className="w-4 h-4 ml-2" />
+                  <ArrowRight className="ml-2 h-4 w-4" />
                 </Button>
               </div>
-            </div>
+            </form>
           </CardContent>
         </Card>
       )}
 
-      {/* Step 3: Submit Order */}
+      {/* Step 3: Payment */}
       {currentStep === 3 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <CreditCard className="w-5 h-5 text-chart-1" />
+              <CreditCard className="text-chart-1 h-5 w-5" />
               Payment Information
             </CardTitle>
-            <CardDescription>Secure payment processing. Your information is encrypted and protected.</CardDescription>
+            <CardDescription>
+              Secure payment processing. Your information is encrypted and
+              protected.
+            </CardDescription>
           </CardHeader>
           <CardContent>
-            <div className="space-y-6">
+            <form onSubmit={handlePaymentSubmit} className="space-y-6">
               <Alert>
                 <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Secure Payment:</strong> All payment information is encrypted and processed securely.
+                  <strong>Secure Payment:</strong> All payment information is
+                  encrypted and processed securely.
                 </AlertDescription>
               </Alert>
 
               {/* Order Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Order Summary</h4>
+              <div className="rounded-lg bg-gray-50 p-4">
+                <h4 className="mb-2 font-semibold">Order Summary</h4>
                 <div className="space-y-2 text-sm">
                   <div className="flex justify-between">
                     <span>LinkedIn Optimization Consultation</span>
                     <span>R2,000.00</span>
                   </div>
-                  {requirements.urgency === 'priority' && (
+                  {requirementsForm.watch("urgency") === "priority" && (
                     <div className="flex justify-between text-orange-600">
                       <span>Priority Service (3-4 days)</span>
                       <span>+R500.00</span>
                     </div>
                   )}
-                  {requirements.urgency === 'urgent' && (
+                  {requirementsForm.watch("urgency") === "urgent" && (
                     <div className="flex justify-between text-red-600">
                       <span>Urgent Service (1-2 days)</span>
                       <span>+R1,000.00</span>
@@ -520,8 +580,11 @@ export function CheckoutFlow() {
                   <div className="flex justify-between font-semibold">
                     <span>Total</span>
                     <span>
-                      {requirements.urgency === 'priority' ? 'R2,500.00' :
-                       requirements.urgency === 'urgent' ? 'R3,000.00' : 'R2,000.00'}
+                      {requirementsForm.watch("urgency") === "priority"
+                        ? "R2,500.00"
+                        : requirementsForm.watch("urgency") === "urgent"
+                          ? "R3,000.00"
+                          : "R2,000.00"}
                     </span>
                   </div>
                 </div>
@@ -529,39 +592,66 @@ export function CheckoutFlow() {
 
               <div>
                 <Label htmlFor="cardholderName">Cardholder Name *</Label>
-                <Input id="cardholderName" placeholder="John Doe" {...paymentForm.register("cardholderName")} />
+                <Input
+                  id="cardholderName"
+                  placeholder="John Doe"
+                  {...paymentForm.register("cardholderName")}
+                />
                 {paymentForm.formState.errors.cardholderName && (
-                  <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.cardholderName.message}</p>
+                  <p className="text-destructive mt-1 text-sm">
+                    {paymentForm.formState.errors.cardholderName.message}
+                  </p>
                 )}
               </div>
 
               <div>
                 <Label htmlFor="billingAddress">Billing Address *</Label>
-                <Input id="billingAddress" placeholder="123 Main Street" {...paymentForm.register("billingAddress")} />
+                <Input
+                  id="billingAddress"
+                  placeholder="123 Main Street"
+                  {...paymentForm.register("billingAddress")}
+                />
                 {paymentForm.formState.errors.billingAddress && (
-                  <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.billingAddress.message}</p>
+                  <p className="text-destructive mt-1 text-sm">
+                    {paymentForm.formState.errors.billingAddress.message}
+                  </p>
                 )}
               </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
+              <div className="grid gap-4 md:grid-cols-2">
                 <div>
                   <Label htmlFor="city">City *</Label>
-                  <Input id="city" placeholder="Cape Town" {...paymentForm.register("city")} />
+                  <Input
+                    id="city"
+                    placeholder="Cape Town"
+                    {...paymentForm.register("city")}
+                  />
                   {paymentForm.formState.errors.city && (
-                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.city.message}</p>
+                    <p className="text-destructive mt-1 text-sm">
+                      {paymentForm.formState.errors.city.message}
+                    </p>
                   )}
                 </div>
                 <div>
                   <Label htmlFor="postalCode">Postal Code *</Label>
-                  <Input id="postalCode" placeholder="8001" {...paymentForm.register("postalCode")} />
+                  <Input
+                    id="postalCode"
+                    placeholder="8001"
+                    {...paymentForm.register("postalCode")}
+                  />
                   {paymentForm.formState.errors.postalCode && (
-                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.postalCode.message}</p>
+                    <p className="text-destructive mt-1 text-sm">
+                      {paymentForm.formState.errors.postalCode.message}
+                    </p>
                   )}
                 </div>
               </div>
 
               <div className="flex items-center space-x-2">
-                <Checkbox id="agreeToTerms" {...paymentForm.register("agreeToTerms")} />
+                <Checkbox
+                  id="agreeToTerms"
+                  {...paymentForm.register("agreeToTerms")}
+                />
                 <Label htmlFor="agreeToTerms" className="text-sm">
                   I agree to the{" "}
                   <a href="/terms" className="text-primary hover:underline">
@@ -573,33 +663,34 @@ export function CheckoutFlow() {
                   </a>
                 </Label>
               </div>
-              {errors.agreeToTerms && (
-                <p className="text-sm text-destructive">{errors.agreeToTerms}</p>
+              {paymentForm.formState.errors.agreeToTerms && (
+                <p className="text-destructive text-sm">
+                  {paymentForm.formState.errors.agreeToTerms.message}
+                </p>
               )}
 
               <div className="flex justify-between">
-                <Button variant="outline" onClick={() => setCurrentStep(2)}>
-                  <ArrowLeft className="w-4 h-4 mr-2" />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => setCurrentStep(2)}
+                >
+                  <ArrowLeft className="mr-2 h-4 w-4" />
                   Back
                 </Button>
-                <Button 
-                onClick={() =>
-                  handlePremiumClick(
-                    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!,
-                  )
-                }
-                
-                type="submit" disabled={isSubmitting} size="lg" className="px-8">
-                  {isSubmitting ? "Processing..." : "Complete Order - R2,000"}
+                <Button
+                  onClick={handlePremiumClick}
+                  disabled={loading || isSubmitting}
+                  size="lg"
+                  className="px-8"
+                >
+                  {loading || isSubmitting ? "Processing..." : "Complete Order"}
                 </Button>
-                <p>
-                  <PayButton />
-                </p>
               </div>
-            </div>
+            </form>
           </CardContent>
         </Card>
       )}
     </div>
-  )
+  );
 }
