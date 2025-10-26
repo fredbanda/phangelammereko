@@ -45,6 +45,7 @@
     "prisma": "^6.15.0",
     "react": "19.1.0",
     "react-color": "^2.19.3",
+    "react-day-picker": "^9.9.0",
     "react-dom": "19.1.0",
     "react-hook-form": "^7.62.0",
     "react-spinners": "^0.17.0",

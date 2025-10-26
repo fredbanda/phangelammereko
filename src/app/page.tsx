@@ -6,9 +6,9 @@ import { ArrowRight, Target, TrendingUp, Users } from "lucide-react"
 
 export default function HomePage() {
   return (
-    <div className="min-h-screen bg-pink-50">
+    <div className="min-h-screen bg-pink-50 dark:bg-pink-50">
       {/* Hero Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 dark:bg-accent">
         <div className="container mx-auto text-center">
           <h1 className="text-5xl font-bold text-foreground mb-6 text-balance">
             Professional Resume Builder & LinkedIn Optimizer
@@ -24,7 +24,7 @@ export default function HomePage() {
                 <ArrowRight className="w-4 h-4 ml-2" />
               </Link>
             </Button>
-            <Button variant="outline" size="lg" asChild className="bg-pink-500 text-white hover:bg-pink-600 hover:text-white">
+            <Button variant="outline" size="lg" asChild className="bg-pink-500 text-white hover:bg-pink-600 hover:text-white dark:bg-pink-700">
               <Link href="/linkedin-optimizer/checkout">
                 Optimize Your LinkedIn Profile
                 <ArrowRight className="w-4 h-4 ml-2" />
@@ -35,13 +35,13 @@ export default function HomePage() {
       </section>
 
       {/* Features Section */}
-      <section className="py-16 px-4 bg-muted/30">
+      <section className="py-16 px-4 bg-muted/30 dark:bg-accent">
         <div className="container mx-auto">
           <h2 className="text-3xl font-bold text-center text-foreground mb-12">
             Everything You Need for Career Success
           </h2>
           <div className="grid md:grid-cols-3 gap-8">
-            <Card className="bg-pink-100">
+            <Card className="bg-pink-100 dark:bg-accent">
               <CardHeader>
                 <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center mb-4">
                   <Target className="w-6 h-6 text-primary" />
@@ -53,7 +53,7 @@ export default function HomePage() {
               </CardHeader>
             </Card>
 
-            <Card className="bg-pink-100">
+            <Card className="bg-pink-100 dark:bg-accent">
               <CardHeader>
                 <div className="w-12 h-12 bg-accent rounded-lg flex items-center justify-center mb-4">
                   <TrendingUp className="w-6 h-6 text-pink-600" />
@@ -66,7 +66,7 @@ export default function HomePage() {
               </CardHeader>
             </Card>
 
-            <Card className="bg-pink-100">
+            <Card className="bg-pink-100 dark:bg-accent">
               <CardHeader>
                 <div className="w-12 h-12 bg-chart-1/10 rounded-lg flex items-center justify-center mb-4">
                   <Users className="w-6 h-6 text-chart-1" />
@@ -82,7 +82,7 @@ export default function HomePage() {
       </section>
 
       {/* CTA Section */}
-      <section className="py-20 px-4">
+      <section className="py-20 px-4 dark:bg-accent">
         <div className="container mx-auto text-center">
           <h2 className="text-3xl font-bold text-foreground mb-6">Ready to Boost Your Career?</h2>
           <p className="text-lg text-muted-foreground mb-8 max-w-2xl mx-auto">

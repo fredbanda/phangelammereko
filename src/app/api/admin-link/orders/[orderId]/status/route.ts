@@ -1,8 +1,14 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+<<<<<<< HEAD
 export async function PATCH(request: NextRequest, { params }: { params: { orderId: string } }) {
   try {
     const { orderId } = params
+=======
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ orderId: string } >}) {
+  try {
+    const { orderId } = await params
+>>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
     const { consultationStatus } = await request.json()
 
     // In a real app, you would:

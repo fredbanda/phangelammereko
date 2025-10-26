@@ -12,54 +12,51 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { Progress } from "@/components/ui/progress"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Badge } from "@/components/ui/badge"
-import { ArrowLeft, ArrowRight, CreditCard, User, FileText, CheckCircle, Shield, AlertCircle, Bug } from "lucide-react"
-import PayButton from "../PaymentButton"
+import { ArrowLeft, ArrowRight, CreditCard, User, FileText, CheckCircle } from "lucide-react"
+import {toast} from "sonner"
+import { createCheckoutSession } from "../premium/actions"
 
-// Simplified validation functions instead of zod
-const validatePersonalInfo = (data: any) => {
-  const errors: any = {}
-  if (!data.firstName || data.firstName.length < 2) errors.firstName = "First name must be at least 2 characters"
-  if (!data.lastName || data.lastName.length < 2) errors.lastName = "Last name must be at least 2 characters"
-  if (!data.email || !/\S+@\S+\.\S+/.test(data.email)) errors.email = "Please enter a valid email address"
-  if (!data.phone || data.phone.length < 10) errors.phone = "Please enter a valid phone number"
-  if (!data.linkedinUrl || !data.linkedinUrl.startsWith('http')) errors.linkedinUrl = "Please enter a valid LinkedIn URL"
-  return { isValid: Object.keys(errors).length === 0, errors }
-}
 
-const validateRequirements = (data: any) => {
-  const errors: any = {}
-  if (!data.currentRole || data.currentRole.length < 2) errors.currentRole = "Please enter your current role"
-  if (!data.targetRole || data.targetRole.length < 2) errors.targetRole = "Please enter your target role"
-  if (!data.industry || data.industry.length < 2) errors.industry = "Please enter your industry"
-  if (!data.experience) errors.experience = "Please select your experience level"
-  if (!data.urgency) errors.urgency = "Please select urgency level"
-  return { isValid: Object.keys(errors).length === 0, errors }
-}
+const personalInfoSchema = z.object({
+  firstName: z.string().min(2, "First name must be at least 2 characters"),
+  lastName: z.string().min(2, "Last name must be at least 2 characters"),
+  email: z.string().email("Please enter a valid email address"),
+  phone: z.string().min(10, "Please enter a valid phone number"),
+  linkedinUrl: z.string().url("Please enter a valid LinkedIn URL"),
+})
 
-const validatePayment = (data: any) => {
-  const errors: any = {}
-  if (!data.agreeToTerms) errors.agreeToTerms = "You must agree to the terms and conditions"
-  return { isValid: Object.keys(errors).length === 0, errors }
-}
+const requirementsSchema = z.object({
+  currentRole: z.string().min(2, "Please enter your current role"),
+  targetRole: z.string().min(2, "Please enter your target role"),
+  industry: z.string().min(2, "Please enter your industry"),
+  experience: z.string().min(1, "Please select your experience level"),
+  specificRequirements: z.string().optional(),
+  urgency: z.string().min(1, "Please select urgency level"),
+})
 
-export default function CheckoutFlow() {
+const paymentSchema = z.object({
+  cardNumber: z.string().min(16, "Please enter a valid card number"),
+  expiryDate: z.string().min(5, "Please enter expiry date (MM/YY)"),
+  cvv: z.string().min(3, "Please enter CVV"),
+  cardholderName: z.string().min(2, "Please enter cardholder name"),
+  billingAddress: z.string().min(5, "Please enter billing address"),
+  city: z.string().min(2, "Please enter city"),
+  postalCode: z.string().min(4, "Please enter postal code"),
+  agreeToTerms: z.boolean().refine((val) => val === true, "You must agree to the terms and conditions"),
+})
+
+type PersonalInfo = z.infer<typeof personalInfoSchema>
+type Requirements = z.infer<typeof requirementsSchema>
+type Payment = z.infer<typeof paymentSchema>
+
+export function CheckoutFlow() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [debugInfo, setDebugInfo] = useState<string[]>([])
-  const [errors, setErrors] = useState<any>({})
-  
-  const [orderData, setOrderData] = useState<{
-    personalInfo?: any
-    requirements?: any
-  }>({})
+    const [loading, setLoading] = useState(false);
 
-  // Form data states
-  const [personalInfo, setPersonalInfo] = useState({
-    firstName: '',
-    lastName: '',
-    email: '',
-    phone: '',
-    linkedinUrl: ''
+
+  const personalForm = useForm<PersonalInfo>({
+    resolver: zodResolver(personalInfoSchema),
   })
 
   const [requirements, setRequirements] = useState({
@@ -82,7 +79,7 @@ export default function CheckoutFlow() {
   const steps = [
     { number: 1, title: "Personal Information", icon: User },
     { number: 2, title: "Requirements", icon: FileText },
-    { number: 3, title: "Payment", icon: CreditCard },
+    { number: 3, title: "Submit Order", icon: Mail },
   ]
 
   const handlePersonalInfoSubmit = () => {
@@ -101,112 +98,143 @@ export default function CheckoutFlow() {
     }
   }
 
-  const handleRequirementsSubmit = () => {
-    addDebugInfo("Requirements form submitted")
-    
-    const validation = validateRequirements(requirements)
-    setErrors(validation.errors)
-    
-    if (validation.isValid) {
-      addDebugInfo("Requirements validation passed")
-      setOrderData(prev => ({ ...prev, requirements }))
-      setCurrentStep(3)
-      addDebugInfo("Moved to step 3")
-    } else {
-      addDebugInfo("Requirements validation failed")
-    }
+  const handleRequirementsSubmit = (data: Requirements) => {
+    console.log("Requirements:", data)
+    setCurrentStep(3)
   }
 
-  const handlePaymentSubmit = async () => {
-    addDebugInfo("Payment form submitted - STARTING PAYMENT PROCESS")
-    
-    const validation = validatePayment(payment)
-    setErrors(validation.errors)
-    
-    if (!validation.isValid) {
-      addDebugInfo("Payment validation failed")
-      return
+  async function handlePremiumClick(priceId: string) {
+      try {
+          setLoading(true);
+          const sessionUrl = await createCheckoutSession(priceId);
+          window.location.href = sessionUrl;
+      } catch (error) {
+          console.log(error);
+          toast.error("Something went wrong while creating the checkout session", {
+            position: "top-right",
+          });
+          
+      }finally{
+          setLoading(false);
+      }
     }
 
+  const handlePaymentSubmit = async (data: Payment) => {
     setIsSubmitting(true)
-    addDebugInfo("Setting isSubmitting to true")
 
     try {
-      const completeOrderData = {
-        personalInfo: orderData.personalInfo,
-        requirements: orderData.requirements,
-        amount: requirements.urgency === 'priority' ? 250000 : requirements.urgency === 'urgent' ? 300000 : 200000,
+      // Combine all form data
+      const orderData = {
+        personalInfo: personalForm.getValues(),
+        requirements: requirementsForm.getValues(),
+        payment: data,
+        amount: 200000, // R2000 in cents
         currency: "ZAR",
       }
-
-      addDebugInfo(`Sending order data: ${JSON.stringify(completeOrderData)}`)
-      addDebugInfo("About to make API call to /api/linkedin/create-order")
 
       const response = await fetch("/api/linkedin/create-order", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(completeOrderData),
+        body: JSON.stringify(orderData),
       })
 
-      addDebugInfo(`API response status: ${response.status}`)
-      addDebugInfo(`API response ok: ${response.ok}`)
-
       if (!response.ok) {
-        const errorText = await response.text()
-        addDebugInfo(`API error response: ${errorText}`)
-        throw new Error(`Failed to create order: ${response.status} ${errorText}`)
+        throw new Error("Failed to create order")
       }
 
       const result = await response.json()
-      addDebugInfo(`API success response: ${JSON.stringify(result)}`)
 
-      if (result.success && result.paymentData && result.paymentUrl) {
-        addDebugInfo("About to submit PayFast form")
-        submitPayFastForm(result.paymentData, result.paymentUrl)
-      } else {
-        addDebugInfo("Invalid response from server - missing required fields")
-        throw new Error("Invalid response from server")
-      }
-      
-    } catch (error: any) {
-      addDebugInfo(`Error occurred: ${error.message}`)
-      console.error(error)
-      alert(`Failed to process order: ${error.message}`)
+    //   toast({
+    //     title: "Order created successfully!",
+    //     description: "You will receive a confirmation email shortly with next steps.",
+    //   })
+
+      // Redirect to success page
+      window.location.href = `/linkedin-optimizer/checkout/success?orderId=${result.orderId}`
+    } catch (error) {
+        console.error(error)
+      toast.error("Payment failed")
     } finally {
       setIsSubmitting(false)
-      addDebugInfo("Setting isSubmitting to false")
     }
   }
 
-  const submitPayFastForm = (paymentData: any, paymentUrl: string) => {
-    addDebugInfo(`Creating PayFast form with URL: ${paymentUrl}`)
-    addDebugInfo(`PayFast data keys: ${Object.keys(paymentData).join(', ')}`)
-    
-    const form = document.createElement('form')
-    form.method = 'POST'
-    form.action = paymentUrl
-    form.style.display = 'none'
-
-    Object.keys(paymentData).forEach(key => {
-      if (paymentData[key] !== null && paymentData[key] !== undefined && paymentData[key] !== '') {
-        const input = document.createElement('input')
-        input.type = 'hidden'
-        input.name = key
-        input.value = paymentData[key].toString()
-        form.appendChild(input)
-        addDebugInfo(`Added form field: ${key} = ${paymentData[key]}`)
-      }
-    })
-
-    document.body.appendChild(form)
-    addDebugInfo("Form appended to body, about to submit")
-    form.submit()
-    addDebugInfo("Form submitted!")
-  }
-
   const progress = (currentStep / steps.length) * 100
+
+  // Success screen
+  if (isSubmitted) {
+    return (
+      <Card className="max-w-2xl mx-auto">
+        <CardHeader className="text-center">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <CardTitle className="text-2xl text-green-800">Order Submitted Successfully!</CardTitle>
+          <CardDescription className="text-lg">
+            Your LinkedIn optimization request has been sent via email.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <Alert>
+            <Mail className="h-4 w-4" />
+            <AlertDescription>
+              An email with your order details has been prepared and should open in your default email client. 
+              If it didn&apos;t open automatically, please copy the order details below and send them to <strong>ndabegeba@gmail.com</strong>.
+            </AlertDescription>
+          </Alert>
+          
+          <div className="bg-gray-50 p-4 rounded-lg">
+            <h4 className="font-semibold mb-2">Order Summary</h4>
+            <div className="space-y-1 text-sm">
+              <p><strong>Name:</strong> {personalInfo.firstName} {personalInfo.lastName}</p>
+              <p><strong>Email:</strong> {personalInfo.email}</p>
+              <p><strong>Phone:</strong> {personalInfo.phone}</p>
+              <p><strong>LinkedIn:</strong> {personalInfo.linkedinUrl}</p>
+              <p><strong>Current Role:</strong> {requirements.currentRole}</p>
+              <p><strong>Target Role:</strong> {requirements.targetRole}</p>
+              <p><strong>Industry:</strong> {requirements.industry}</p>
+              <p><strong>Experience:</strong> {requirements.experience}</p>
+              <p><strong>Timeline:</strong> {
+                requirements.urgency === 'standard' ? 'Standard (5-7 days)' :
+                requirements.urgency === 'priority' ? 'Priority (3-4 days)' :
+                'Urgent (1-2 days)'
+              }</p>
+              <p><strong>Total:</strong> R{
+                requirements.urgency === 'priority' ? '2,500' :
+                requirements.urgency === 'urgent' ? '3,000' : '2,000'
+              }</p>
+            </div>
+          </div>
+
+          <Alert>
+            <AlertCircle className="h-4 w-4" />
+            <AlertDescription>
+              <strong>What happens next?</strong><br />
+              1. We&apos;ll review your order and contact you within 24 hours<br />
+              2. We&apos;ll arrange payment details with you directly<br />
+              3. Once payment is confirmed, we&apos;ll begin your LinkedIn optimization<br />
+              4. You&apos;ll receive your optimized profile within the selected timeline
+            </AlertDescription>
+          </Alert>
+
+          <div className="flex justify-center">
+            <Button onClick={() => {
+              setIsSubmitted(false)
+              setCurrentStep(1)
+              setPersonalInfo({firstName: '', lastName: '', email: '', phone: '', linkedinUrl: ''})
+              setRequirements({currentRole: '', targetRole: '', industry: '', experience: '', urgency: '', specificRequirements: ''})
+              setPayment({agreeToTerms: false})
+              setOrderData({})
+            }}>
+              Submit Another Order
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    )
+  }
 
   return (
     <div className="space-y-6">
@@ -214,7 +242,7 @@ export default function CheckoutFlow() {
       <Card>
         <CardHeader>
           <div className="flex items-center justify-between mb-4">
-            <CardTitle>Checkout Process</CardTitle>
+            <CardTitle>Order Submission Process</CardTitle>
             <Badge variant="outline">
               Step {currentStep} of {steps.length}
             </Badge>
@@ -439,7 +467,7 @@ export default function CheckoutFlow() {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button onClick={handleRequirementsSubmit}>
+                <Button type="submit">
                   Continue to Payment
                   <ArrowRight className="w-4 h-4 ml-2" />
                 </Button>
@@ -449,25 +477,22 @@ export default function CheckoutFlow() {
         </Card>
       )}
 
-      {/* Step 3: Payment */}
+      {/* Step 3: Submit Order */}
       {currentStep === 3 && (
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <CreditCard className="w-5 h-5 text-chart-1" />
-              Payment with PayFast
+              Payment Information
             </CardTitle>
-            <CardDescription>
-              Secure payment processing via PayFast - South Africa&apos;s leading payment gateway.
-            </CardDescription>
+            <CardDescription>Secure payment processing. Your information is encrypted and protected.</CardDescription>
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
               <Alert>
-                <Shield className="h-4 w-4" />
+                <CheckCircle className="h-4 w-4" />
                 <AlertDescription>
-                  <strong>Secure PayFast Payment:</strong> Your payment will be processed securely through PayFast, 
-                  South Africa&apos;s most trusted payment gateway. You can pay with credit cards, instant EFT, or other local payment methods.
+                  <strong>Secure Payment:</strong> All payment information is encrypted and processed securely.
                 </AlertDescription>
               </Alert>
 
@@ -502,70 +527,51 @@ export default function CheckoutFlow() {
                 </div>
               </div>
 
-              {/* Payment Methods Info */}
-              <div className="bg-blue-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2 flex items-center gap-2">
-                  <CreditCard className="w-4 h-4" />
-                  Available Payment Methods
-                </h4>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-sm">
-                  <div className="flex items-center gap-1">
-                    <span>💳</span> Credit Cards
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span>🏧</span> Instant EFT
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span>📱</span> SnapScan
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <span>🏪</span> Store Cards
-                  </div>
+              <div>
+                <Label htmlFor="cardholderName">Cardholder Name *</Label>
+                <Input id="cardholderName" placeholder="John Doe" {...paymentForm.register("cardholderName")} />
+                {paymentForm.formState.errors.cardholderName && (
+                  <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.cardholderName.message}</p>
+                )}
+              </div>
+
+              <div>
+                <Label htmlFor="billingAddress">Billing Address *</Label>
+                <Input id="billingAddress" placeholder="123 Main Street" {...paymentForm.register("billingAddress")} />
+                {paymentForm.formState.errors.billingAddress && (
+                  <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.billingAddress.message}</p>
+                )}
+              </div>
+
+              <div className="grid md:grid-cols-2 gap-4">
+                <div>
+                  <Label htmlFor="city">City *</Label>
+                  <Input id="city" placeholder="Cape Town" {...paymentForm.register("city")} />
+                  {paymentForm.formState.errors.city && (
+                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.city.message}</p>
+                  )}
+                </div>
+                <div>
+                  <Label htmlFor="postalCode">Postal Code *</Label>
+                  <Input id="postalCode" placeholder="8001" {...paymentForm.register("postalCode")} />
+                  {paymentForm.formState.errors.postalCode && (
+                    <p className="text-sm text-destructive mt-1">{paymentForm.formState.errors.postalCode.message}</p>
+                  )}
                 </div>
               </div>
 
-              {/* Customer Details Summary */}
-              <div className="bg-gray-50 p-4 rounded-lg">
-                <h4 className="font-semibold mb-2">Customer Details</h4>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                  <div>
-                    <span className="font-medium">Name:</span> {orderData.personalInfo?.firstName} {orderData.personalInfo?.lastName}
-                  </div>
-                  <div>
-                    <span className="font-medium">Email:</span> {orderData.personalInfo?.email}
-                  </div>
-                  <div>
-                    <span className="font-medium">Phone:</span> {orderData.personalInfo?.phone}
-                  </div>
-                  <div>
-                    <span className="font-medium">Timeline:</span> {
-                      requirements.urgency === 'standard' ? '5-7 days' :
-                      requirements.urgency === 'priority' ? '3-4 days' :
-                      requirements.urgency === 'urgent' ? '1-2 days' : 'Standard'
-                    }
-                  </div>
-                </div>
-              </div>
-
-              {/* Terms and Conditions */}
-              <div className="flex items-start space-x-2">
-                <Checkbox 
-                  id="agreeToTerms" 
-                  checked={payment.agreeToTerms}
-                  onCheckedChange={(checked) => setPayment(prev => ({...prev, agreeToTerms: !!checked}))}
-                />
-                <div className="text-sm">
-                  <Label htmlFor="agreeToTerms" className="text-sm cursor-pointer">
-                    I agree to the{" "}
-                    <a href="/terms" target="_blank" className="text-primary hover:underline">
-                      Terms and Conditions
-                    </a>{" "}
-                    and{" "}
-                    <a href="/privacy" target="_blank" className="text-primary hover:underline">
-                      Privacy Policy
-                    </a>. I understand that payment will be processed through PayFast and I will be redirected to their secure payment page.
-                  </Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <Checkbox id="agreeToTerms" {...paymentForm.register("agreeToTerms")} />
+                <Label htmlFor="agreeToTerms" className="text-sm">
+                  I agree to the{" "}
+                  <a href="/terms" className="text-primary hover:underline">
+                    Terms and Conditions
+                  </a>{" "}
+                  and{" "}
+                  <a href="/privacy" className="text-primary hover:underline">
+                    Privacy Policy
+                  </a>
+                </Label>
               </div>
               {errors.agreeToTerms && (
                 <p className="text-sm text-destructive">{errors.agreeToTerms}</p>
@@ -576,20 +582,15 @@ export default function CheckoutFlow() {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button onClick={handlePaymentSubmit} disabled={isSubmitting} size="lg" className="px-8">
-                  {isSubmitting ? (
-                    <>
-                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
-                      Processing...
-                    </>
-                  ) : (
-                    <>
-                      Proceed to PayFast - {
-                        requirements.urgency === 'priority' ? 'R2,500' :
-                        requirements.urgency === 'urgent' ? 'R3,000' : 'R2,000'
-                      }
-                    </>
-                  )}
+                <Button 
+                onClick={() =>
+                  handlePremiumClick(
+                    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!,
+                  )
+                }
+                
+                type="submit" disabled={isSubmitting} size="lg" className="px-8">
+                  {isSubmitting ? "Processing..." : "Complete Order - R2,000"}
                 </Button>
                 <p>
                   <PayButton />

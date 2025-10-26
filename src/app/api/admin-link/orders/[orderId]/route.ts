@@ -1,8 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server"
 
+<<<<<<< HEAD
 export async function GET(request: NextRequest, { params }: { params: { orderId: string } }) {
   try {
     const { orderId } = params
+=======
+export async function GET(
+  request: NextRequest, 
+  { params }: { params: Promise<{ orderId: string }> }
+) {
+  try {
+    // Await the params Promise
+    const { orderId } = await params
+>>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
 
     // In a real app, you would:
     // 1. Verify admin authentication
@@ -30,6 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
     })
   } catch (error) {
     console.error("Failed to fetch order:", error)
+<<<<<<< HEAD
     return NextResponse.json({ success: false, error: "Failed to fetch order" }, { status: 500 })
   }
 }
@@ -37,6 +48,22 @@ export async function GET(request: NextRequest, { params }: { params: { orderId:
 export async function PATCH(request: NextRequest, { params }: { params: { orderId: string } }) {
   try {
     const { orderId } = params
+=======
+    return NextResponse.json(
+      { success: false, error: "Failed to fetch order" }, 
+      { status: 500 }
+    )
+  }
+}
+
+export async function PATCH(
+  request: NextRequest, 
+  { params }: { params: Promise<{ orderId: string }> }
+) {
+  try {
+    // Await the params Promise
+    const { orderId } = await params
+>>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
     const updates = await request.json()
 
     // In a real app, you would:
@@ -54,6 +81,15 @@ export async function PATCH(request: NextRequest, { params }: { params: { orderI
     })
   } catch (error) {
     console.error("Failed to update order:", error)
+<<<<<<< HEAD
     return NextResponse.json({ success: false, error: "Failed to update order" }, { status: 500 })
   }
 }
+=======
+    return NextResponse.json(
+      { success: false, error: "Failed to update order" }, 
+      { status: 500 }
+    )
+  }
+}
+>>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b

@@ -23,44 +23,39 @@ export async function POST(request: Request) {
     console.error("❌ Error constructing event:", error)
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 })
   }
-
   if (event.type === "checkout.session.completed") {
-    const session = event.data.object as any
+    const session = event.data.object as any;
 
     try {
+      let orderData = null;
+
+      if (session.metadata?.orderData) {
+        try {
+          orderData = JSON.parse(session.metadata.orderData);
+        } catch (err) {
+          console.error("❌ Failed to parse orderData", err);
+        }
+      }
+
       if (session.metadata?.orderId) {
-        // Update existing order
-        await prisma.consultationOrder.update({
-          where: { id: session.metadata.orderId },
-          data: {
-            paymentStatus: "PAID",
-            consultationStatus: "COMPLETED",
-            stripeSessionId: session.id,
-            paymentIntentId: session.payment_intent,
-            updatedAt: new Date(),
-          },
-        })
-        console.log(`✅ Updated order ${session.metadata.orderId}`)
-      } else if (session.metadata?.orderData) {
-        // Create new order (fallback)
-        const orderData = JSON.parse(session.metadata.orderData)
-        await prisma.consultationOrder.create({
-          data: {
-            clientName: orderData.clientName,
-            clientEmail: orderData.clientEmail,
-            requirements: orderData.requirements || [],
-            amount: orderData.amount,
-            currency: orderData.currency,
-            paymentStatus: "PAID",
-            consultationStatus: "COMPLETED",
-            stripeSessionId: session.id,
-            paymentIntentId: session.payment_intent,
-          },
-        })
-        console.log("✅ Created new order from webhook")
+        // ✅ Update existing order
+        await updateOrderStatus(
+          session.metadata.orderId,
+          "completed",
+          session.payment_intent
+        );
+      } else if (orderData) {
+        // ✅ Create new order with confirmed payment
+        await saveOrderToDatabase({
+          ...orderData,
+          status: "completed",
+          userId: session.metadata?.userId,
+          paymentIntentId: session.payment_intent,
+          stripeSessionId: session.id,
+        });
       }
     } catch (err) {
-      console.error("❌ Error handling checkout.session.completed:", err)
+      console.error("❌ Error handling checkout.session.completed", err);
     }
   }
 

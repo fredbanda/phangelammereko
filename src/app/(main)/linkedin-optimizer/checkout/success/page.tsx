@@ -15,6 +15,7 @@ interface SuccessPageProps {
   }>;
 }
 
+<<<<<<< HEAD
 async function getOrderFromStripeSession(sessionId: string) {
   try {
     // Get session from Stripe
@@ -65,6 +66,58 @@ async function getOrderFromStripeSession(sessionId: string) {
     return null
   }
 }
+=======
+// async function getOrderFromStripeSession(sessionId: string) {
+//   try {
+//     // Get session from Stripe
+//     const session = await stripe.checkout.sessions.retrieve(sessionId)
+    
+//     if (!session) {
+//       return null
+//     }
+
+//     // Find or update order based on session
+//     let order
+    
+//     if (session.metadata?.orderId) {
+//       // Update existing order
+//       order = await prisma.consultationOrder.update({
+//         where: { id: session.metadata.orderId },
+//         data: {
+//           paymentStatus: session.payment_status === "paid" ? "completed" : "pending",
+//           status: session.payment_status === "paid" ? "confirmed" : "pending",
+//           stripeSessionId: session.id,
+//           paymentIntentId: session.payment_intent as string || null,
+//           updatedAt: new Date(),
+//         },
+//         include: { user: true },
+//       })
+//     } else if (session.metadata?.orderData) {
+//       // Create order from session metadata (fallback)
+//       const orderData = JSON.parse(session.metadata.orderData)
+//       order = await prisma.consultationOrder.create({
+//         data: {
+//           clientName: orderData.clientName,
+//           clientEmail: orderData.clientEmail,
+//           requirements: orderData.requirements || [],
+//           amount: orderData.amount,
+//           currency: orderData.currency,
+//           paymentStatus: session.payment_status === "paid" ? "completed" : "pending",
+//           status: session.payment_status === "paid" ? "confirmed" : "pending",
+//           stripeSessionId: session.id,
+//           paymentIntentId: session.payment_intent as string || null,
+//         },
+//         include: { user: true },
+//       })
+//     }
+
+//     return order
+//   } catch (error) {
+//     console.error("Error retrieving order from Stripe session:", error)
+//     return null
+//   }
+// }
+>>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
 
 export default async function SuccessPage({ searchParams }: SuccessPageProps) {
   const resolvedSearchParams = await searchParams
@@ -81,7 +134,11 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
     })
   } else if (sessionId) {
     // Stripe session redirect (new flow)
+<<<<<<< HEAD
     order = await getOrderFromStripeSession(sessionId)
+=======
+    // order = await getOrderFromStripeSession(sessionId)
+>>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
   }
 
   if (!order) {
@@ -180,9 +237,15 @@ export default async function SuccessPage({ searchParams }: SuccessPageProps) {
                       Amount: {order.currency} {(order.amount / 100).toFixed(2)}
                     </p>
                   </div>
+<<<<<<< HEAD
                   <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'}>
                     {order.paymentStatus === 'completed' ? 'Paid' : 'Processing'}
                   </Badge>
+=======
+                  {/* <Badge variant={order.paymentStatus === 'completed' ? 'default' : 'secondary'}>
+                    {order.paymentStatus === 'completed' ? 'Paid' : 'Processing'}
+                  </Badge> */}
+>>>>>>> f67a3c6f132c1225fbc5c39baadceba1453edc0b
                 </div>
               </div>
             </CardContent>
