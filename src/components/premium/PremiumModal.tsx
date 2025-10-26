@@ -24,28 +24,42 @@ export default function PremiumModal() {
   const { open, setOpen } = usePremiumModal();
   const [loading, setLoading] = useState(false);
 
+  // ✅ Accept a priceId parameter
   async function handlePremiumClick(priceId: string) {
     try {
-        setLoading(true);
-        const sessionUrl = await createCheckoutSession(priceId);
-        window.location.href = sessionUrl;
+      setLoading(true);
+      const session = await createCheckoutSession(priceId);
+
+      if (session.url) {
+        window.location.href = session.url;
+      } else if (session.requiresAuth) {
+        toast.error("Please log in to continue", { position: "top-right" });
+      } else {
+        toast.error(
+          session.error ||
+            "Something went wrong while creating the checkout session",
+          { position: "top-right" },
+        );
+      }
     } catch (error) {
-        console.log(error);
-        toast.error("Something went wrong while creating the checkout session", {
-          position: "top-right",
-        });
-        
-    }finally{
-        setLoading(false);
+      console.error(error);
+      toast.error("Something went wrong while creating the checkout session", {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={(open => {
-        if(!loading){
-            setOpen(open);
+    <Dialog
+      open={open}
+      onOpenChange={(open) => {
+        if (!loading) {
+          setOpen(open);
         }
-    })}>
+      }}
+    >
       <DialogContent className="max-w-2xl">
         <DialogHeader>
           <DialogTitle>Maximum Number Reached</DialogTitle>
@@ -56,6 +70,7 @@ export default function PremiumModal() {
             continue creating resumes.
           </p>
           <div className="flex">
+            {/* Donate Section */}
             <div className="flex w-1/2 flex-col space-y-5">
               <h3 className="text-center text-lg font-bold">Donate</h3>
               <ul className="list-inside list-disc space-y-2">
@@ -77,7 +92,10 @@ export default function PremiumModal() {
                 Donate
               </Button>
             </div>
+
             <div className="mx-6 border-l" />
+
+            {/* Premium Section */}
             <div className="flex w-1/2 flex-col space-y-5">
               <h3 className="text-center text-lg font-bold text-emerald-500">
                 Premium Subscription
