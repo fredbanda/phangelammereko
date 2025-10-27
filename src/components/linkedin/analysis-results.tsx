@@ -73,60 +73,49 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
   //   }
   // }
 
-  const handlePaymentSubmit = async (priceId: string) => {
-    setIsSubmitting(true);
+ 
+ const handlePaymentSubmit = async (priceId: string) => {
+   setIsSubmitting(true);
 
-    try {
-      // Combine all form data
-      // const orderData = {
-      //   personalInfo: personalForm.getValues(),
-      //   requirements: requirementsForm.getValues(),
-      //   payment: data,
-      //   amount: 200000, // R2000 in cents
-      //   currency: "ZAR",
-      //   status: 'pending' // Add status field
-      // }
+   try {
+     const response = await fetch("/api/linkedin/create-order", {
+       method: "POST",
+       headers: {
+         "Content-Type": "application/json",
+       },
+       body: JSON.stringify(priceId),
+     });
 
-      // First, save the order data to database
-      const response = await fetch("/api/linkedin/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(priceId),
-      });
+     if (!response.ok) {
+       throw new Error("Failed to create order");
+     }
 
-      if (!response.ok) {
-        throw new Error("Failed to create order");
-      }
+     const result = await response.json();
+     const orderId = result.orderId;
 
-      const result = await response.json();
-      const orderId = result.orderId;
+     // FIXED: Pass the orderId to createCheckoutSession
+     const sessionResult = await createCheckoutSession(priceId, { orderId });
 
-      // Then redirect to Stripe with the order ID
-      const sessionResult = await createCheckoutSession(priceId);
-
-      if (sessionResult.url) {
-        window.location.href = sessionResult.url;
-      } else if (sessionResult.requiresAuth) {
-        toast.error("Please log in to continue", { position: "top-right" });
-      } else {
-        toast.error(
-          sessionResult.error ||
-            "Something went wrong while creating the checkout session",
-          { position: "top-right" },
-        );
-      }
-    } catch (error) {
-      console.error(error);
-      toast.error("Something went wrong while creating the checkout session", {
-        position: "top-right",
-      });
-    } finally {
-      setLoading(false);
-    }
-  }
-
+     if (sessionResult.url) {
+       window.location.href = sessionResult.url;
+     } else if (sessionResult.requiresAuth) {
+       toast.error("Please log in to continue", { position: "top-right" });
+     } else {
+       toast.error(
+         sessionResult.error ||
+           "Something went wrong while creating the checkout session",
+         { position: "top-right" },
+       );
+     }
+   } catch (error) {
+     console.error(error);
+     toast.error("Something went wrong while creating the checkout session", {
+       position: "top-right",
+     });
+   } finally {
+     setLoading(false);
+   }
+ };
   async function handleDownloadPDF() {
     console.log("handleDownloadPDF clicked");
 
