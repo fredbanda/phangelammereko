@@ -28,6 +28,8 @@ import {
   Download,
 } from "lucide-react";
 import { format } from "date-fns";
+import { useSession } from "next-auth/react";
+import { redirect } from "next/navigation";
 
 interface OrderStats {
   totalOrders: number;
@@ -61,11 +63,25 @@ export default function OrdersManagement() {
   const [timeRange, setTimeRange] = useState("monthly");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
+    const { data: session, status } = useSession();
 
   useEffect(() => {
     fetchOrdersData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [timeRange, statusFilter]);
+
+  if (status === "loading") {
+    return (
+      <div className="flex min-h-screen items-center justify-center">
+        <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
+      </div>
+    );
+  }
+
+  if (status === "unauthenticated") {
+    redirect("/login");
+  }
+
 
   const fetchOrdersData = async () => {
     try {

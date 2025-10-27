@@ -104,19 +104,28 @@ export function AnalysisResults({ profile, report }: AnalysisResultsProps) {
       const orderId = result.orderId;
 
       // Then redirect to Stripe with the order ID
-      const sessionUrl = await createCheckoutSession(
-        process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!,
-        //orderId! // Pass order ID to Stripe metadata
-      );
+      const sessionResult = await createCheckoutSession(priceId);
 
-      window.location.href = sessionUrl;
+      if (sessionResult.url) {
+        window.location.href = sessionResult.url;
+      } else if (sessionResult.requiresAuth) {
+        toast.error("Please log in to continue", { position: "top-right" });
+      } else {
+        toast.error(
+          sessionResult.error ||
+            "Something went wrong while creating the checkout session",
+          { position: "top-right" },
+        );
+      }
     } catch (error) {
       console.error(error);
-      toast.error("Failed to process order");
+      toast.error("Something went wrong while creating the checkout session", {
+        position: "top-right",
+      });
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
-  };
+  }
 
   async function handleDownloadPDF() {
     console.log("handleDownloadPDF clicked");
