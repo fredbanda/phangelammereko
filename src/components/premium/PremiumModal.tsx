@@ -7,8 +7,8 @@ import usePremiumModal from "@/hooks/usePremiumModal";
 import { useState } from "react";
 import { toast } from "sonner";
 import { createCheckoutSession } from "./actions";
-import { useSession } from "next-auth/react"; // ✅ import useSession
-import { useRouter } from "next/navigation"; // ✅ use router for redirect
+import { useUser } from "@clerk/nextjs"; // ✅ Clerk hook
+import { useRouter } from "next/navigation";
 
 const donateFeatures = [
   "Up to 8 CVs/Resumes",
@@ -25,26 +25,23 @@ const premiumSubscriptionFeatures = [
 export default function PremiumModal() {
   const { open, setOpen } = usePremiumModal();
   const [loading, setLoading] = useState(false);
-  const { data: session } = useSession(); // ✅ hook called at top level
+  const { user } = useUser(); // ✅ Clerk user
   const router = useRouter();
 
   async function handlePremiumClick(priceId: string) {
     try {
-      // 🧠 1️⃣ Check if user is logged in first
-      if (!session?.user) {
+      // ✅ Check if user is logged in via Clerk
+      if (!user) {
         toast.error("Please sign in to continue", { position: "top-right" });
-        router.push("/sign-in"); // ✅ use Next.js router navigation
+        router.push("/sign-in");
         return;
       }
 
-      // 🧠 2️⃣ Proceed with checkout
       setLoading(true);
       const sessionResult = await createCheckoutSession(priceId);
 
       if (sessionResult.url) {
         window.location.href = sessionResult.url;
-      } else if (sessionResult.requiresAuth) {
-        toast.error("Please log in to continue", { position: "top-right" });
       } else {
         toast.error(
           sessionResult.error ||

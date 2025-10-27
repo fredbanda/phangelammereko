@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useUser, useAuth } from "@clerk/nextjs"; // ← Clerk hooks (replaces useSession)
 import {
   Card,
   CardContent,
@@ -28,8 +29,7 @@ import {
   Download,
 } from "lucide-react";
 import { format } from "date-fns";
-import { useSession } from "next-auth/react";
-import { redirect } from "next/navigation";
+import { redirect } from "next/navigation"; // Keep for fallback, but middleware handles most cases
 
 interface OrderStats {
   totalOrders: number;
@@ -57,20 +57,28 @@ interface Order {
 }
 
 export default function OrdersManagement() {
+  const { isLoaded, isSignedIn, user } = useUser(); // ← Gets user data if signed in
+  const { isLoaded: authLoaded, signOut } = useAuth(); // ← For sign out, etc.
   const [orders, setOrders] = useState<Order[]>([]);
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [timeRange, setTimeRange] = useState("monthly");
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-    const { data: session, status } = useSession();
 
+  // Middleware already protects this route, but double-check client-side if needed
   useEffect(() => {
-    fetchOrdersData();
+    if (isLoaded && !isSignedIn) {
+      redirect("/sign-in"); // Fallback redirect
+    }
+    if (isLoaded && isSignedIn) {
+      fetchOrdersData();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [timeRange, statusFilter]);
+  }, [isLoaded, isSignedIn, timeRange, statusFilter]);
 
-  if (status === "loading") {
+  // Show loading if Clerk is still loading (replaces your old "status === 'loading'")
+  if (!authLoaded || !isLoaded) {
     return (
       <div className="flex min-h-screen items-center justify-center">
         <div className="border-primary h-8 w-8 animate-spin rounded-full border-b-2"></div>
@@ -78,10 +86,7 @@ export default function OrdersManagement() {
     );
   }
 
-  if (status === "unauthenticated") {
-    redirect("/login");
-  }
-
+  // No need for unauthenticated check—middleware handles it
 
   const fetchOrdersData = async () => {
     try {
@@ -139,18 +144,25 @@ export default function OrdersManagement() {
 
   return (
     <div className="space-y-6 p-6">
-      {/* Header */}
+      {/* Header - Optional: Show welcome with user name */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-foreground text-3xl font-bold"></h1>
+          <h1 className="text-foreground text-3xl font-bold">
+            Welcome, {user?.firstName || "Admin"}!
+          </h1>
           <p className="text-muted-foreground">
             Track and manage LinkedIn consultation orders
           </p>
         </div>
-        <Button className="bg-accent hover:bg-accent/90">
-          <Download className="mr-2 h-4 w-4" />
-          Export Data
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="outline" onClick={() => signOut()}>
+            Sign Out
+          </Button>
+          <Button className="bg-accent hover:bg-accent/90">
+            <Download className="mr-2 h-4 w-4" />
+            Export Data
+          </Button>
+        </div>
       </div>
 
       {/* Stats Cards */}

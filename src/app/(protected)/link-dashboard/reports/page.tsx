@@ -1,44 +1,66 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// eslint-disable-next-line @typescript-eslint/no-unused-vars
-const dynamic = "force-dynamic";
+import { Suspense } from "react";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
+  FileText,
+  Download,
+  Eye,
+  Calendar,
+  TrendingUp,
+  Search,
+  Shield,
+} from "lucide-react";
+import Link from "next/link";
 
-import { Suspense } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { Input } from "@/components/ui/input"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { FileText, Download, Eye, Calendar, TrendingUp, Search, Shield } from "lucide-react"
-import Link from "next/link"
+// Tell Next.js this page must be rendered on the server (real-time data)
+export const dynamic = "force-dynamic";
 
 async function ReportsContent() {
   try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/reports`, {
-      cache: "no-store",
-    })
+    // 1. CALL fetch
+    const response = await fetch("/api/admin/reports", {
+      next: { revalidate: 60 }, // Cache for 1 minute
+    });
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch reports")
-    }
+    // 2. CHECK status
+    if (!response.ok) throw new Error("Failed to fetch reports");
 
-    const reports = await response.json()
+    // 3. READ JSON
+    const reports = await response.json();
 
     if (reports.length === 0) {
       return (
         <Card>
           <CardContent className="flex flex-col items-center justify-center py-12">
-            <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-            <h3 className="text-lg font-medium mb-2">No reports yet</h3>
-            <p className="text-muted-foreground text-center mb-4">
-              Start by analyzing LinkedIn profiles to get detailed optimization insights.
+            <FileText className="text-muted-foreground mb-4 h-12 w-12" />
+            <h3 className="mb-2 text-lg font-medium">No reports yet</h3>
+            <p className="text-muted-foreground mb-4 text-center">
+              Start by analyzing LinkedIn profiles to get detailed optimization
+              insights.
             </p>
             <Button asChild>
               <Link href="/linkedin-optimizer">Create First Report</Link>
             </Button>
           </CardContent>
         </Card>
-      )
+      );
     }
 
     return (
@@ -47,47 +69,52 @@ async function ReportsContent() {
           <ReportCard key={report.id} report={report} />
         ))}
       </div>
-    )
+    );
   } catch (error) {
-    console.error(error)
+    console.error(error);
     return (
       <Card>
         <CardContent className="flex flex-col items-center justify-center py-12">
           <p className="text-muted-foreground">Failed to load reports</p>
         </CardContent>
       </Card>
-    )
+    );
   }
 }
 
+/* ------------------------------------------------------------------ */
+/* ReportCard – unchanged, only moved below the async function        */
+/* ------------------------------------------------------------------ */
 function ReportCard({ report }: { report: any }) {
   const getScoreColor = (score: number) => {
-    if (score >= 80) return "text-green-600"
-    if (score >= 60) return "text-yellow-600"
-    return "text-red-600"
-  }
+    if (score >= 80) return "text-green-600";
+    if (score >= 60) return "text-yellow-600";
+    return "text-red-600";
+  };
 
   const getScoreBadge = (score: number) => {
-    if (score >= 80) return <Badge className="bg-green-100 text-green-800">Excellent</Badge>
-    if (score >= 60) return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>
-    return <Badge className="bg-red-100 text-red-800">Needs Work</Badge>
-  }
+    if (score >= 80)
+      return <Badge className="bg-green-100 text-green-800">Excellent</Badge>;
+    if (score >= 60)
+      return <Badge className="bg-yellow-100 text-yellow-800">Good</Badge>;
+    return <Badge className="bg-red-100 text-red-800">Needs Work</Badge>;
+  };
 
   const suggestionsCount =
     (report.keywordSuggestions?.length || 0) +
     (report.structureSuggestions?.length || 0) +
     (report.readabilitySuggestions?.length || 0) +
-    (report.experienceSuggestions?.length || 0)
+    (report.experienceSuggestions?.length || 0);
 
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="transition-shadow hover:shadow-md">
       <CardHeader>
         <div className="flex items-start justify-between">
           <div className="flex-1">
             <CardTitle className="text-lg">
               {report.profile.fullName} - {report.profile.headline}
             </CardTitle>
-            <CardDescription className="flex items-center gap-2 mt-1">
+            <CardDescription className="mt-1 flex items-center gap-2">
               <Calendar className="h-4 w-4" />
               Analyzed on {new Date(report.createdAt).toLocaleDateString()}
               <span className="mx-2">•</span>
@@ -101,11 +128,15 @@ function ReportCard({ report }: { report: any }) {
       <CardContent className="space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
+            <TrendingUp className="text-muted-foreground h-4 w-4" />
             <span className="font-medium">Overall Score</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className={`text-2xl font-bold ${getScoreColor(report.overallScore)}`}>{report.overallScore}</span>
+            <span
+              className={`text-2xl font-bold ${getScoreColor(report.overallScore)}`}
+            >
+              {report.overallScore}
+            </span>
             <span className="text-muted-foreground">/100</span>
           </div>
         </div>
@@ -131,8 +162,10 @@ function ReportCard({ report }: { report: any }) {
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-2 border-t">
-          <span className="text-sm text-muted-foreground">{suggestionsCount} optimization suggestions</span>
+        <div className="flex items-center justify-between border-t pt-2">
+          <span className="text-muted-foreground text-sm">
+            {suggestionsCount} optimization suggestions
+          </span>
           <div className="flex gap-2">
             <Button variant="outline" size="sm">
               <Download className="mr-2 h-4 w-4" />
@@ -148,20 +181,29 @@ function ReportCard({ report }: { report: any }) {
         </div>
       </CardContent>
     </Card>
-  )
+  );
 }
 
+/* ------------------------------------------------------------------ */
+/* Page component – unchanged                                         */
+/* ------------------------------------------------------------------ */
 export default function AdminReportsPage() {
   return (
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="container mx-auto space-y-8 py-8">
       <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
         <div>
-          <div className="flex items-center gap-2 mb-2">
+          <div className="mb-2 flex items-center gap-2">
             <Shield className="h-5 w-5 text-rose-600" />
-            <span className="text-sm font-medium text-rose-600">Admin Dashboard</span>
+            <span className="text-sm font-medium text-rose-600">
+              Admin Dashboard
+            </span>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">LinkedIn Reports</h1>
-          <p className="text-muted-foreground">View and manage all LinkedIn profile analyses</p>
+          <h1 className="text-3xl font-bold tracking-tight">
+            LinkedIn Reports
+          </h1>
+          <p className="text-muted-foreground">
+            View and manage all LinkedIn profile analyses
+          </p>
         </div>
         <Button asChild>
           <Link href="/linkedin-optimizer">
@@ -179,8 +221,11 @@ export default function AdminReportsPage() {
           <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <div className="flex-1">
               <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search by profile name or industry..." className="pl-10" />
+                <Search className="text-muted-foreground absolute top-3 left-3 h-4 w-4" />
+                <Input
+                  placeholder="Search by profile name or industry..."
+                  className="pl-10"
+                />
               </div>
             </div>
             <Select defaultValue="all">
@@ -209,9 +254,11 @@ export default function AdminReportsPage() {
         </CardContent>
       </Card>
 
-      <Suspense fallback={<div>Loading reports...</div>}>
+      <Suspense
+        fallback={<div className="py-12 text-center">Loading reports…</div>}
+      >
         <ReportsContent />
       </Suspense>
     </div>
-  )
+  );
 }
