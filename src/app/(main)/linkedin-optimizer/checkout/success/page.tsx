@@ -358,10 +358,10 @@ export default async function SuccessPage(props: SuccessPageProps) {
               <CardContent>
                 <div className="space-y-3">
                   <p className="text-sm">
-                    <strong>Email:</strong> support@linkedinoptimizer.com
+                    <strong>Email:</strong> support@careerforty.com
                   </p>
                   <p className="text-sm">
-                    <strong>Phone:</strong> +27 21 123 4567
+                    <strong>Phone:</strong> 081 440 2910
                   </p>
                   <p className="text-sm">
                     <strong>Hours:</strong> Mon-Fri, 9AM-5PM SAST

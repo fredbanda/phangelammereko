@@ -19,7 +19,7 @@ export default function Navbar() {
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2">
           <Image src={Logo} alt="Logo" width={30} height={30} />
-          <span className="text-xl font-bold hidden md:block">CareerForty</span>
+          <span className="text-xl font-bold uppercase hidden md:block">CareerForty</span>
         </Link>
 
         {/* Desktop Links */}
