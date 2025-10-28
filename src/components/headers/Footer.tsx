@@ -88,12 +88,15 @@ export default function Footer() {
       <div className="container mx-auto px-4">
         <div className="-mx-4 flex flex-wrap justify-between">
           <div className="px-4 w-full text-center sm:w-auto sm:text-left">
-            Copyright © 2013 {" - "}
-           {currentYear} {" "} EunnyTech. All Rights Reserved.
+            Copyright ©  {" "}
+           {currentYear} {" "} CareerFort. All Rights Reserved.
            
           </div>
-          <div className="px-4 w-full text-center sm:w-auto sm:text-left">
-            Made with ❤️ by EunnyTech.
+            <div className="px-4 w-full text-center sm:w-auto sm:text-left">
+              <Link href="https://eunnytech.co.za">
+                 A Company of EunnyTech.
+              </Link>
+           
           </div>
         </div>
       </div>
