@@ -18,6 +18,7 @@ import {
   Phone,
   ArrowRight,
   AlertCircle,
+  RefreshCw,
 } from "lucide-react";
 import Link from "next/link";
 import prisma from "@/utils/prisma";
@@ -34,6 +35,33 @@ interface SuccessPageProps {
     orderId?: string;
     session_id?: string;
   }>;
+}
+
+// Retry logic for race conditions
+async function getOrderWithRetry(orderId: string, maxRetries = 3) {
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      const order = await prisma.consultationOrder.findUnique({
+        where: { id: orderId },
+        include: { user: true },
+      });
+      
+      if (order) {
+        console.log(`Order found on attempt ${i + 1}`);
+        return order;
+      }
+      
+      // Wait before retrying (1s, 2s, 3s)
+      if (i < maxRetries - 1) {
+        console.log(`Order not found, retrying in ${i + 1}s...`);
+        await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+      }
+    } catch (err) {
+      console.error(`Error on attempt ${i + 1}:`, err);
+      if (i === maxRetries - 1) throw err;
+    }
+  }
+  return null;
 }
 
 async function getOrderFromStripeSession(sessionId: string) {
@@ -60,7 +88,7 @@ async function getOrderFromStripeSession(sessionId: string) {
     if (session.metadata?.orderId) {
       console.log("Updating existing order:", session.metadata.orderId);
 
-      // Update existing order
+      // Update existing order with retry
       try {
         order = await prisma.consultationOrder.update({
           where: { id: session.metadata.orderId },
@@ -274,19 +302,28 @@ function ErrorFallback({ error }: { error?: string }) {
 
           <Card className="mb-8">
             <CardHeader>
-              <CardTitle>Unable to Load Order Details</CardTitle>
+              <CardTitle>Loading Order Details...</CardTitle>
               <CardDescription>
-                We encountered a temporary issue loading your order information.
+                We&apos;re retrieving your order information
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
                 <p className="text-sm text-yellow-800">
                   <strong>Don&apos;t worry!</strong> Your payment has been processed
-                  successfully. We&apos;re experiencing a temporary issue retrieving
+                  successfully. We&apos;re experiencing a temporary delay retrieving
                   your order details, but everything is secure.
                 </p>
               </div>
+
+              <Button 
+                onClick={() => window.location.reload()} 
+                className="w-full"
+                variant="default"
+              >
+                <RefreshCw className="mr-2 h-4 w-4" />
+                Refresh Page
+              </Button>
 
               <div className="space-y-3 text-sm">
                 <p className="font-semibold">What happens next:</p>
@@ -301,6 +338,9 @@ function ErrorFallback({ error }: { error?: string }) {
                   </li>
                   <li>
                     All your order details are safely stored in our system
+                  </li>
+                  <li>
+                    You can refresh this page in a moment to see your order details
                   </li>
                 </ul>
               </div>
@@ -388,10 +428,13 @@ export default async function SuccessPage(props: SuccessPageProps) {
     const orderId = searchParams?.orderId;
     const sessionId = searchParams?.session_id;
 
-    console.log("=== DEBUG INFO ===");
+    console.log("=== FULL DEBUG INFO ===");
+    console.log("Timestamp:", new Date().toISOString());
     console.log("orderId:", orderId);
     console.log("sessionId:", sessionId);
     console.log("searchParams:", searchParams);
+    console.log("Database connected:", !!prisma);
+    console.log("Stripe configured:", !!stripe);
 
     // Check if we have at least one identifier
     if (!orderId && !sessionId) {
@@ -402,33 +445,49 @@ export default async function SuccessPage(props: SuccessPageProps) {
     let order;
 
     if (orderId) {
-      // Direct order ID access
-      console.log("Fetching order by ID:", orderId);
+      // Direct order ID access with retry
+      console.log("Fetching order by ID with retry:", orderId);
       try {
-        order = await prisma.consultationOrder.findUnique({
-          where: { id: orderId },
-          include: { user: true },
-        });
+        order = await getOrderWithRetry(orderId);
         console.log("Order found by ID:", order ? "YES" : "NO");
       } catch (err) {
         console.error("Error fetching order by ID:", err);
         return <ErrorFallback error={`Database error: ${err}`} />;
       }
     } else if (sessionId) {
-      // Stripe session redirect
-      console.log("Fetching order by session ID:", sessionId);
-      order = await getOrderFromStripeSession(sessionId);
+      // Stripe session redirect with retry
+      console.log("Fetching order by session ID with retry:", sessionId);
+      
+      // Try multiple times in case webhook hasn't completed yet
+      for (let i = 0; i < 3; i++) {
+        order = await getOrderFromStripeSession(sessionId);
+        
+        if (order) {
+          console.log("Order found by session on attempt", i + 1);
+          break;
+        }
+        
+        if (i < 2) {
+          console.log(`Session order not ready, retrying in ${i + 1}s...`);
+          await new Promise(resolve => setTimeout(resolve, 1000 * (i + 1)));
+        }
+      }
+      
       console.log("Order found by session:", order ? "YES" : "NO");
     }
 
     if (!order) {
       console.error(
-        "Order not found - orderId:",
+        "Order not found after retries - orderId:",
         orderId,
         "sessionId:",
         sessionId,
       );
-      return <ErrorFallback error="Order safe in the database" />;
+      return (
+        <ErrorFallback 
+          error={`We're still processing your order. Order ID: ${orderId || sessionId || 'Unknown'}. Please refresh this page in a moment, or check your email for confirmation.`} 
+        />
+      );
     }
 
     // Parse requirements safely
@@ -690,7 +749,6 @@ export default async function SuccessPage(props: SuccessPageProps) {
     );
   } catch (error) {
     console.error("Error rendering success page:", error);
-    // Return error UI instead of calling notFound()
     return (
       <ErrorFallback
         error={error instanceof Error ? error.message : String(error)}
