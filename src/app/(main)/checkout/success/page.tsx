@@ -428,7 +428,7 @@ export default async function SuccessPage(props: SuccessPageProps) {
         "sessionId:",
         sessionId,
       );
-      return <ErrorFallback error="Order not found in database" />;
+      return <ErrorFallback error="Order safe in the database" />;
     }
 
     // Parse requirements safely
