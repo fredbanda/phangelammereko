@@ -447,6 +447,14 @@ export default async function SuccessPage(props: SuccessPageProps) {
       return <ErrorFallback error="Missing order identifier" />;
     }
 
+    // Add initial delay to give webhook time to process
+    // Only delay for session-based lookups (Stripe redirects)
+    if (sessionId && !orderId) {
+      console.log("Adding 2s initial delay to allow webhook to process...");
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      console.log("Initial delay complete, proceeding with order lookup...");
+    }
+
     let order;
 
     if (orderId) {
