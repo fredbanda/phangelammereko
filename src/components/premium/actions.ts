@@ -18,29 +18,27 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
     const price = await stripe.prices.retrieve(priceId);
     const isRecurring = !!price.recurring;
 
-    // 🆕 CREATE ORDER BEFORE STRIPE CHECKOUT
-    let orderId = orderData?.orderId;
+    // Extract requirements properly
+    const requirements = orderData?.requirements || {};
     
-    if (!orderId) {
-      console.log("📝 Creating order before checkout for user:", user.id);
-      
-      // Create the order in the database
-      const order = await prisma.consultationOrder.create({
-        data: {
-          userId: user.id,
-          clientName: orderData?.clientName || user.fullName || user.emailAddresses[0].emailAddress,
-          clientEmail: orderData?.clientEmail || user.emailAddresses[0].emailAddress,
-          requirements: orderData?.requirements || {},
-          amount: price.unit_amount || 0,
-          currency: price.currency?.toUpperCase() || "ZAR",
-          paymentStatus: "PENDING",
-          consultationStatus: "PENDING",
-        },
-      });
-      
-      orderId = order.id;
-      console.log("✅ Order created:", orderId);
-    }
+    console.log("📝 Creating order with requirements:", JSON.stringify(requirements, null, 2));
+
+    // CREATE ORDER BEFORE STRIPE CHECKOUT
+    const order = await prisma.consultationOrder.create({
+      data: {
+        userId: user.id,
+        clientName: orderData?.clientName || user.fullName || user.emailAddresses[0].emailAddress,
+        clientEmail: orderData?.clientEmail || user.emailAddresses[0].emailAddress,
+        requirements: requirements, // ✅ This should now have all the data
+        amount: price.unit_amount || 0,
+        currency: price.currency?.toUpperCase() || "ZAR",
+        paymentStatus: "PENDING",
+        consultationStatus: "PENDING",
+      },
+    });
+    
+    console.log("✅ Order created with ID:", order.id);
+    console.log("✅ Order requirements saved:", JSON.stringify(order.requirements, null, 2));
 
     // Create Stripe session with orderId
     const session = await stripe.checkout.sessions.create({
@@ -52,15 +50,15 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
 
       metadata: {
         userId: user.id,
-        orderId: orderId,  // ✅ Always include orderId now!
-        ...(orderData && { orderData: JSON.stringify(orderData) }),
+        orderId: order.id,
+        // Don't include orderData in metadata anymore - it's already saved in DB
       },
 
       ...(isRecurring && {
         subscription_data: {
           metadata: {
             userId: user.id,
-            orderId: orderId,  // ✅ Also include in subscription metadata
+            orderId: order.id,
           },
         },
         consent_collection: {
@@ -73,11 +71,11 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
       return { error: "Error creating checkout session" };
     }
 
-    console.log("✅ Checkout session created:", session.id, "for order:", orderId);
+    console.log("✅ Checkout session created:", session.id, "for order:", order.id);
 
-    return { url: session.url, orderId: orderId };
+    return { url: session.url, orderId: order.id };
   } catch (error) {
-    console.error("Checkout session error:", error);
+    console.error("❌ Checkout session error:", error);
     return { error: "Failed to create checkout session" };
   }
 }

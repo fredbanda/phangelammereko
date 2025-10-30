@@ -46,7 +46,6 @@ type PersonalInfo = z.infer<typeof personalInfoSchema>
 type Requirements = z.infer<typeof requirementsSchema>
 type Payment = z.infer<typeof paymentSchema>
 
-// Changed to default export
 export default function CheckoutFlow() {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -81,77 +80,92 @@ export default function CheckoutFlow() {
     setCurrentStep(3)
   })
 
-async function handlePremiumClick() {
-  try {
-    setLoading(true);
-    const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!;
+  // ✅ FIXED: Now collects and passes all form data to Stripe
+  async function handlePremiumClick() {
+    try {
+      setLoading(true);
+      
+      // Get all form data
+      const personalInfo = personalForm.getValues();
+      const requirements = requirementsForm.getValues();
+      
+      // Validate that all data is filled
+      if (!personalInfo.firstName || !personalInfo.email || !requirements.currentRole) {
+        toast.error("Please fill in all required fields", { position: "top-right" });
+        setLoading(false);
+        return;
+      }
 
-    const session = await createCheckoutSession(priceId);
+      // Calculate price based on urgency
+      let amount = 200000; // Base price R2000 in cents
+      if (requirements.urgency === "priority") {
+        amount = 250000; // R2500
+      } else if (requirements.urgency === "urgent") {
+        amount = 300000; // R3000
+      }
 
-    if (session.url) {
-      // Success case — redirect
-      window.location.href = session.url;
-    } else if (session.requiresAuth) {
-      toast.error("Please log in to continue", { position: "top-right" });
-    } else {
-      toast.error(
-        session.error ||
-          "Something went wrong while creating the checkout session",
-        {
-          position: "top-right",
-        },
-      );
+      // Structure the order data correctly
+      const orderData = {
+        clientName: `${personalInfo.firstName} ${personalInfo.lastName}`,
+        clientEmail: personalInfo.email,
+        requirements: {
+          personalInfo: {
+            firstName: personalInfo.firstName,
+            lastName: personalInfo.lastName,
+            email: personalInfo.email,
+            phone: personalInfo.phone,
+            linkedinUrl: personalInfo.linkedinUrl,
+          },
+          requirements: {
+            currentRole: requirements.currentRole,
+            targetRole: requirements.targetRole,
+            industry: requirements.industry,
+            experience: requirements.experience,
+            specificRequirements: requirements.specificRequirements || "",
+            urgency: requirements.urgency,
+          }
+        }
+      };
+
+      console.log("📦 Submitting order data:", orderData);
+
+      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!;
+
+      // ✅ Pass orderData to createCheckoutSession
+      const session = await createCheckoutSession(priceId, orderData);
+
+      if (session.url) {
+        // Success - redirect to Stripe
+        window.location.href = session.url;
+      } else if (session.requiresAuth) {
+        toast.error("Please log in to continue", { position: "top-right" });
+      } else {
+        toast.error(
+          session.error || "Something went wrong while creating the checkout session",
+          { position: "top-right" }
+        );
+      }
+    } catch (error) {
+      console.error("Checkout error:", error);
+      toast.error("Something went wrong while creating the checkout session", {
+        position: "top-right",
+      });
+    } finally {
+      setLoading(false);
     }
-  } catch (error) {
-    console.log(error);
-    toast.error("Something went wrong while creating the checkout session", {
-      position: "top-right",
-    });
-  } finally {
-    setLoading(false);
   }
-}
-
 
   const handlePaymentSubmit = paymentForm.handleSubmit(async (data) => {
-    setIsSubmitting(true)
-
-    try {
-      // Combine all form data
-      const orderData = {
-        personalInfo: personalForm.getValues(),
-        requirements: requirementsForm.getValues(),
-        payment: data,
-        amount: 200000, // R2000 in cents
-        currency: "ZAR",
-      }
-
-      const response = await fetch("/api/linkedin/create-order", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(orderData),
-      })
-
-      if (!response.ok) {
-        throw new Error("Failed to create order")
-      }
-
-      const result = await response.json()
-
-      window.location.href = `/linkedin-optimizer/checkout/success?orderId=${result.orderId}`
-    } catch (error) {
-      console.error(error)
-      toast.error("Payment failed")
-    } finally {
-      setIsSubmitting(false)
-    }
+    // Validate payment form
+    console.log("Payment form validated:", data);
+    
+    // Then proceed with checkout
+    await handlePremiumClick();
   })
 
   const progress = (currentStep / steps.length) * 100
 
-  // Success screen
+  // Success screen (keep as is)
   if (isSubmitted) {
     const personalInfo = personalForm.getValues()
     const requirements = requirementsForm.getValues()
@@ -555,9 +569,14 @@ async function handlePremiumClick() {
                 </div>
               </div>
 
-              <div className="flex items-center space-x-2">
-                <Checkbox id="agreeToTerms" {...paymentForm.register("agreeToTerms")} />
-                <Label htmlFor="agreeToTerms" className="text-sm">
+              <div className="flex items-start space-x-2">
+                <Checkbox 
+                  id="agreeToTerms" 
+                  onCheckedChange={(checked) => {
+                    paymentForm.setValue("agreeToTerms", checked === true);
+                  }}
+                />
+                <Label htmlFor="agreeToTerms" className="text-sm cursor-pointer">
                   I agree to the{" "}
                   <a href="/terms" className="text-primary hover:underline">
                     Terms and Conditions
@@ -577,7 +596,7 @@ async function handlePremiumClick() {
                   <ArrowLeft className="w-4 h-4 mr-2" />
                   Back
                 </Button>
-                <Button onClick={handlePremiumClick} disabled={loading || isSubmitting} size="lg" className="px-8">
+                <Button type="submit" disabled={loading || isSubmitting} size="lg" className="px-8">
                   {loading || isSubmitting ? "Processing..." : "Complete Order"}
                 </Button>
               </div>
