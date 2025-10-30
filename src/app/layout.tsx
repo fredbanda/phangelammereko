@@ -17,7 +17,7 @@ export const metadata: Metadata = {
   title: {
     template: "CareerForty | %s",
     absolute:
-      "CareerForty | Resume Builder & LinkedIn Optimization for Job Seekers",
+      "CareerForty | Resume Builder & LinkedIn Optimization",
   },
   description:
     "Create a professional resume, optimize your LinkedIn profile, and boost your job search confidence with CareerForty — designed for mid-career professionals and every job seeker aiming higher.",

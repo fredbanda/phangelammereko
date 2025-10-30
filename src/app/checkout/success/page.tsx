@@ -1,4 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+export const dynamic = "force-dynamic";
+
 import { notFound } from "next/navigation";
 import {
   Card,
