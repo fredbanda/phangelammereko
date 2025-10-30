@@ -94,8 +94,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Invalid signature" }, { status: 400 });
   }
 
+  console.log(`🔔 Webhook received: ${event.type}`);
+
   if (event.type === "checkout.session.completed") {
     const session = event.data.object as any;
+
+    console.log("📦 Session metadata from webhook:", session.metadata);
+    console.log("💰 Payment intent from webhook:", session.payment_intent);
+    console.log("💵 Amount:", session.amount_total);
 
     try {
       let orderData = null;
@@ -103,6 +109,7 @@ export async function POST(request: Request) {
       if (session.metadata?.orderData) {
         try {
           orderData = JSON.parse(session.metadata.orderData);
+          console.log("✅ Parsed orderData:", orderData);
         } catch (err) {
           console.error("❌ Failed to parse orderData", err);
         }
@@ -110,13 +117,15 @@ export async function POST(request: Request) {
 
       if (session.metadata?.orderId) {
         // ✅ Update existing order
+        console.log("📝 Updating existing order:", session.metadata.orderId);
         await updateOrderStatus(
           session.metadata.orderId,
           "completed",
           session.payment_intent,
         );
       } else if (orderData) {
-        // ✅ Create new order with confirmed payment
+        // ✅ Create new order from orderData
+        console.log("🆕 Creating new order from orderData");
         await saveOrderToDatabase({
           ...orderData,
           status: "completed",
@@ -124,9 +133,46 @@ export async function POST(request: Request) {
           paymentIntentId: session.payment_intent,
           stripeSessionId: session.id,
         });
+      } else if (session.metadata?.userId) {
+        // 🆕 FALLBACK: Create order from session + userId
+        console.log("🔄 No orderId or orderData, creating fallback order for userId:", session.metadata.userId);
+        
+        // Get user info
+        const user = await prisma.user.findUnique({
+          where: { id: session.metadata.userId },
+        });
+
+        if (!user) {
+          console.error("❌ User not found:", session.metadata.userId);
+          throw new Error(`User not found: ${session.metadata.userId}`);
+        }
+
+        console.log("👤 User found:", user.email);
+
+        // Create order with available info
+        await saveOrderToDatabase({
+          userId: session.metadata.userId,
+          clientName: user.name || user.email || "Unknown",
+          clientEmail: user.email || "no-email@provided.com",
+          requirements: {},
+          amount: session.amount_total || 0,
+          currency: session.currency?.toUpperCase() || "ZAR",
+          status: "completed",
+          paymentIntentId: session.payment_intent,
+          stripeSessionId: session.id,
+        });
+      } else {
+        // ⚠️ No way to create order
+        console.error("❌ Cannot create order: No orderId, orderData, or userId in metadata");
+        console.error("Session metadata:", JSON.stringify(session.metadata));
       }
     } catch (err) {
       console.error("❌ Error handling checkout.session.completed", err);
+      // Still return 200 to prevent Stripe from retrying
+      return NextResponse.json({ 
+        received: true, 
+        error: err instanceof Error ? err.message : String(err) 
+      });
     }
   }
 

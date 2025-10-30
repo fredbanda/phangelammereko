@@ -3,6 +3,7 @@
 
 import { currentUser } from "@clerk/nextjs/server";
 import stripe from "@/lib/stripe";
+import prisma from "@/utils/prisma";
 
 export async function createCheckoutSession(priceId: string, orderData?: any) {
   const user = await currentUser();
@@ -17,6 +18,31 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
     const price = await stripe.prices.retrieve(priceId);
     const isRecurring = !!price.recurring;
 
+    // 🆕 CREATE ORDER BEFORE STRIPE CHECKOUT
+    let orderId = orderData?.orderId;
+    
+    if (!orderId) {
+      console.log("📝 Creating order before checkout for user:", user.id);
+      
+      // Create the order in the database
+      const order = await prisma.consultationOrder.create({
+        data: {
+          userId: user.id,
+          clientName: orderData?.clientName || user.fullName || user.emailAddresses[0].emailAddress,
+          clientEmail: orderData?.clientEmail || user.emailAddresses[0].emailAddress,
+          requirements: orderData?.requirements || {},
+          amount: price.unit_amount || 0,
+          currency: price.currency?.toUpperCase() || "ZAR",
+          paymentStatus: "PENDING",
+          consultationStatus: "PENDING",
+        },
+      });
+      
+      orderId = order.id;
+      console.log("✅ Order created:", orderId);
+    }
+
+    // Create Stripe session with orderId
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: priceId, quantity: 1 }],
       mode: isRecurring ? "subscription" : "payment",
@@ -26,7 +52,7 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
 
       metadata: {
         userId: user.id,
-        ...(orderData?.orderId && { orderId: orderData.orderId }),
+        orderId: orderId,  // ✅ Always include orderId now!
         ...(orderData && { orderData: JSON.stringify(orderData) }),
       },
 
@@ -34,6 +60,7 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
         subscription_data: {
           metadata: {
             userId: user.id,
+            orderId: orderId,  // ✅ Also include in subscription metadata
           },
         },
         consent_collection: {
@@ -46,7 +73,9 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
       return { error: "Error creating checkout session" };
     }
 
-    return { url: session.url };
+    console.log("✅ Checkout session created:", session.id, "for order:", orderId);
+
+    return { url: session.url, orderId: orderId };
   } catch (error) {
     console.error("Checkout session error:", error);
     return { error: "Failed to create checkout session" };
