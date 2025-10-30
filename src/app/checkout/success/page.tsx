@@ -2,7 +2,6 @@
 export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
-import { notFound } from "next/navigation";
 import {
   Card,
   CardContent,
@@ -12,7 +11,14 @@ import {
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { CheckCircle, Calendar, Mail, Phone, ArrowRight } from "lucide-react";
+import {
+  CheckCircle,
+  Calendar,
+  Mail,
+  Phone,
+  ArrowRight,
+  AlertCircle,
+} from "lucide-react";
 import Link from "next/link";
 import prisma from "@/utils/prisma";
 import stripe from "@/lib/stripe";
@@ -248,6 +254,133 @@ function parseRequirements(requirements: any, order: any) {
   }
 }
 
+// Error fallback component
+function ErrorFallback({ error }: { error?: string }) {
+  return (
+    <div className="bg-background min-h-screen">
+      <div className="container mx-auto px-4 py-8">
+        <div className="mx-auto max-w-4xl">
+          <div className="mb-8 text-center">
+            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-yellow-100">
+              <AlertCircle className="h-8 w-8 text-yellow-600" />
+            </div>
+            <h1 className="text-foreground mb-4 text-4xl font-bold text-balance">
+              Payment Received
+            </h1>
+            <p className="text-muted-foreground text-xl text-pretty">
+              Your payment has been processed successfully
+            </p>
+          </div>
+
+          <Card className="mb-8">
+            <CardHeader>
+              <CardTitle>Unable to Load Order Details</CardTitle>
+              <CardDescription>
+                We encountered a temporary issue loading your order information.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-yellow-200 bg-yellow-50 p-4">
+                <p className="text-sm text-yellow-800">
+                  <strong>Don&apos;t worry!</strong> Your payment has been processed
+                  successfully. We&apos;re experiencing a temporary issue retrieving
+                  your order details, but everything is secure.
+                </p>
+              </div>
+
+              <div className="space-y-3 text-sm">
+                <p className="font-semibold">What happens next:</p>
+                <ul className="list-disc space-y-2 pl-5">
+                  <li>
+                    You&apos;ll receive an order confirmation email within the next
+                    few minutes
+                  </li>
+                  <li>
+                    Our team will contact you within 24 hours to schedule your
+                    consultation
+                  </li>
+                  <li>
+                    All your order details are safely stored in our system
+                  </li>
+                </ul>
+              </div>
+
+              {error && (
+                <details className="text-muted-foreground mt-4 text-xs">
+                  <summary className="cursor-pointer">
+                    Technical details
+                  </summary>
+                  <pre className="bg-muted mt-2 overflow-auto rounded p-2">
+                    {error}
+                  </pre>
+                </details>
+              )}
+            </CardContent>
+          </Card>
+
+          <div className="grid gap-6 md:grid-cols-2">
+            <Card>
+              <CardHeader>
+                <CardTitle>Need Immediate Help?</CardTitle>
+                <CardDescription>
+                  Our support team is here to assist you
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <p className="text-sm">
+                    <strong>Email:</strong> support@careerforty.com
+                  </p>
+                  <p className="text-sm">
+                    <strong>Phone:</strong> +27 81440 2910
+                  </p>
+                  <p className="text-sm">
+                    <strong>Hours:</strong> Mon-Fri, 9AM-5PM SAST
+                  </p>
+                </div>
+                <Button className="mt-4 w-full" asChild>
+                  <a href="mailto:support@careerforty.com">Contact Support</a>
+                </Button>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle>Continue Building Your Career</CardTitle>
+                <CardDescription>Explore our other services</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  <Button
+                    variant="outline"
+                    className="w-full bg-transparent"
+                    asChild
+                  >
+                    <Link href="/resume-builder">
+                      Build a Resume
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="w-full bg-transparent"
+                    asChild
+                  >
+                    <Link href="/">
+                      Return to Home
+                      <ArrowRight className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default async function SuccessPage(props: SuccessPageProps) {
   try {
     // Await searchParams
@@ -263,7 +396,7 @@ export default async function SuccessPage(props: SuccessPageProps) {
     // Check if we have at least one identifier
     if (!orderId && !sessionId) {
       console.error("No orderId or session_id provided");
-      notFound();
+      return <ErrorFallback error="Missing order identifier" />;
     }
 
     let order;
@@ -279,7 +412,7 @@ export default async function SuccessPage(props: SuccessPageProps) {
         console.log("Order found by ID:", order ? "YES" : "NO");
       } catch (err) {
         console.error("Error fetching order by ID:", err);
-        notFound();
+        return <ErrorFallback error={`Database error: ${err}`} />;
       }
     } else if (sessionId) {
       // Stripe session redirect
@@ -295,7 +428,7 @@ export default async function SuccessPage(props: SuccessPageProps) {
         "sessionId:",
         sessionId,
       );
-      notFound();
+      return <ErrorFallback error="Order not found in database" />;
     }
 
     // Parse requirements safely
@@ -557,6 +690,11 @@ export default async function SuccessPage(props: SuccessPageProps) {
     );
   } catch (error) {
     console.error("Error rendering success page:", error);
-    notFound();
+    // Return error UI instead of calling notFound()
+    return (
+      <ErrorFallback
+        error={error instanceof Error ? error.message : String(error)}
+      />
+    );
   }
 }
