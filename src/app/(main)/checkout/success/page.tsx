@@ -185,37 +185,39 @@ async function getOrderFromStripeSession(sessionId: string) {
           }
         }
 
-        // If not found, get the most recent unpaid order for this user
+        // FIXED: Try to find ANY recent order for this user (not just PENDING)
         order = await prisma.consultationOrder.findFirst({
           where: {
             userId: session.metadata.userId,
-            paymentStatus: "PENDING",
+            // Remove PENDING filter - look for any order
           },
           orderBy: { createdAt: "desc" },
           include: { user: true },
         });
 
         if (order) {
-          console.log("Found pending order for user:", order.id);
+          console.log("Found recent order for user:", order.id, "Status:", order.paymentStatus);
 
-          // Update the order with payment info
-          order = await prisma.consultationOrder.update({
-            where: { id: order.id },
-            data: {
-              paymentStatus:
-                session.payment_status === "paid" ? "PAID" : "PENDING",
-              consultationStatus:
-                session.payment_status === "paid" ? "IN_PROGRESS" : "PENDING",
-              paymentId: paymentIntentId || null,
-              updatedAt: new Date(),
-            },
-            include: { user: true },
-          });
+          // Update the order with payment info if needed
+          if (paymentIntentId && order.paymentId !== paymentIntentId) {
+            order = await prisma.consultationOrder.update({
+              where: { id: order.id },
+              data: {
+                paymentStatus:
+                  session.payment_status === "paid" ? "PAID" : "PENDING",
+                consultationStatus:
+                  session.payment_status === "paid" ? "IN_PROGRESS" : "PENDING",
+                paymentId: paymentIntentId || null,
+                updatedAt: new Date(),
+              },
+              include: { user: true },
+            });
 
-          console.log("Order updated with payment info:", order.id);
+            console.log("Order updated with payment info:", order.id);
+          }
         } else {
           console.error(
-            "No pending order found for userId:",
+            "No order found for userId:",
             session.metadata.userId,
           );
         }
@@ -316,13 +318,16 @@ function ErrorFallback({ error }: { error?: string }) {
                 </p>
               </div>
 
+              {/* FIXED: Use Link with refresh instead of onClick */}
               <Button 
-                onClick={() => window.location.reload()} 
+                asChild
                 className="w-full"
                 variant="default"
               >
-                <RefreshCw className="mr-2 h-4 w-4" />
-                Refresh Page
+                <Link href={typeof window !== 'undefined' ? window.location.href : '#'}>
+                  <RefreshCw className="mr-2 h-4 w-4" />
+                  Refresh Page
+                </Link>
               </Button>
 
               <div className="space-y-3 text-sm">
