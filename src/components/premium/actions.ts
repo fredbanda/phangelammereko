@@ -15,21 +15,46 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
   }
 
   try {
+    // ✅ STEP 1: Sync Clerk user with database
+    console.log("👤 Syncing user:", user.emailAddresses[0].emailAddress);
+    
+    const dbUser = await prisma.user.upsert({
+      where: { email: user.emailAddresses[0].emailAddress },
+      update: {
+        name: user.fullName || `${user.firstName || ""} ${user.lastName || ""}`.trim(),
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        phone: user.phoneNumbers[0]?.phoneNumber || null,
+        photoUrl: user.imageUrl || null,
+        updatedAt: new Date(),
+      },
+      create: {
+        email: user.emailAddresses[0].emailAddress,
+        name: user.fullName || `${user.firstName || ""} ${user.lastName || ""}`.trim() || "User",
+        firstName: user.firstName || null,
+        lastName: user.lastName || null,
+        phone: user.phoneNumbers[0]?.phoneNumber || null,
+        photoUrl: user.imageUrl || null,
+      },
+    });
+
+    console.log("✅ Database user synced:", dbUser.id);
+
+    // ✅ STEP 2: Get Stripe price
     const price = await stripe.prices.retrieve(priceId);
     const isRecurring = !!price.recurring;
 
-    // Extract requirements properly
+    // ✅ STEP 3: Extract requirements
     const requirements = orderData?.requirements || {};
-    
     console.log("📝 Creating order with requirements:", JSON.stringify(requirements, null, 2));
 
-    // CREATE ORDER BEFORE STRIPE CHECKOUT
+    // ✅ STEP 4: Create order with DATABASE user ID
     const order = await prisma.consultationOrder.create({
       data: {
-        userId: user.id,
-        clientName: orderData?.clientName || user.fullName || user.emailAddresses[0].emailAddress,
+        userId: dbUser.id, // ← Use database user ID, not Clerk ID
+        clientName: orderData?.clientName || dbUser.name || user.emailAddresses[0].emailAddress,
         clientEmail: orderData?.clientEmail || user.emailAddresses[0].emailAddress,
-        requirements: requirements, // ✅ This should now have all the data
+        requirements: requirements,
         amount: price.unit_amount || 0,
         currency: price.currency?.toUpperCase() || "ZAR",
         paymentStatus: "PENDING",
@@ -40,7 +65,7 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
     console.log("✅ Order created with ID:", order.id);
     console.log("✅ Order requirements saved:", JSON.stringify(order.requirements, null, 2));
 
-    // Create Stripe session with orderId
+    // ✅ STEP 5: Create Stripe checkout session
     const session = await stripe.checkout.sessions.create({
       line_items: [{ price: priceId, quantity: 1 }],
       mode: isRecurring ? "subscription" : "payment",
@@ -49,15 +74,16 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
       customer_email: user.emailAddresses[0].emailAddress,
 
       metadata: {
-        userId: user.id,
+        clerkUserId: user.id, // Store Clerk ID for reference
+        dbUserId: dbUser.id,   // Store database ID
         orderId: order.id,
-        // Don't include orderData in metadata anymore - it's already saved in DB
       },
 
       ...(isRecurring && {
         subscription_data: {
           metadata: {
-            userId: user.id,
+            clerkUserId: user.id,
+            dbUserId: dbUser.id,
             orderId: order.id,
           },
         },
@@ -76,6 +102,13 @@ export async function createCheckoutSession(priceId: string, orderData?: any) {
     return { url: session.url, orderId: order.id };
   } catch (error) {
     console.error("❌ Checkout session error:", error);
+    
+    // Better error logging
+    if (error instanceof Error) {
+      console.error("Error name:", error.name);
+      console.error("Error message:", error.message);
+    }
+    
     return { error: "Failed to create checkout session" };
   }
 }

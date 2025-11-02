@@ -24,7 +24,9 @@ export default function Footer() {
    
             </Link> 
             <p className="text-justify mt-[-30px]">
-              At eunnyTech, we empower careers and businesses with smart digital solutions. Our platform offers free resume and CV building, premium LinkedIn profile optimization, and seamless job posting to connect talent with opportunity. Beyond careers, we craft custom web and software projects, helping individuals and companies thrive in today&apos;s competitive digital world..
+              There is no right age to elevate your career.
+              If you&apos;re serious about growth, invest in it.
+              Our LinkedIn Profile Optimization service provides expert analysis and personalized consultation to help you stand out, get noticed, and attract the right opportunities.
             </p>
           </div>
 

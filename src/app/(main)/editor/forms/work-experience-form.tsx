@@ -11,7 +11,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { workExperienceSchema, WorkExperienceValues } from "@/lib/validations";
-import { EditorFormProps } from "@/utils/types";
+import { EditorFormProps } from "types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontal, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";

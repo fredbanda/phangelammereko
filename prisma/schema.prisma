@@ -13,6 +13,54 @@ datasource db {
   url      = env("DATABASE_URI")
 }
 
+enum JobType {
+  FULL_TIME @map("full-time")
+  PART_TIME @map("part-time")
+  CONTRACT  @map("contract")
+  REMOTE    @map("remote")
+}
+
+enum JobStatus {
+  PENDING  @map("pending")
+  APPROVED @map("approved")
+  REJECTED @map("rejected")
+}
+
+enum ConsultationStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  FAILED
+  REFUNDED
+}
+
+enum UserRole {
+  USER
+  ADMIN
+  CONSULTANT
+}
+
+enum SaleStatus {
+  PENDING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+  REFUNDED
+}
+
+enum PackageType {
+  STANDARD // 5-7 days - R2,000
+  PRIORITY // 3-4 days - R2,500
+  URGENT // 1-2 days - R3,000
+}
+
+// Updated User model with admin fields
 model User {
   id           String  @id @default(cuid())
   email        String  @unique
@@ -31,13 +79,20 @@ model User {
   twitter      String?
   portfolioUrl String?
 
+  // NEW: Role and admin fields
+  role    UserRole @default(USER)
+  isAdmin Boolean  @default(false)
+
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   linkedinProfiles    LinkedinProfile[]
   optimizationReports OptimizationReport[]
-  consultationOrders  ConsultationOrder[]
+  consultationOrders  ConsultationOrder[]  
 
+  @@index([email])
+  @@index([role])
+  @@index([isAdmin])
   @@map("users")
 }
 
@@ -67,7 +122,7 @@ model Resume {
   workExperiences      WorkExperience[]
   educations           Education[]
   certifications       Certification[]
-  skills               Skill[]
+  hardSkills           HardSkill[]
   softSkills           SoftSkill[]
   projectsPublications ProjectsPublication[]
   awards               Award[]
@@ -97,8 +152,8 @@ model WorkExperience {
 }
 
 model Education {
-  id String @id @default(cuid())
-
+  id            String  @id @default(cuid())
+  leadId        String?
   institution   String?
   qualification String?
   city          String?
@@ -115,7 +170,7 @@ model Education {
   @@map("educations")
 }
 
-model Skill {
+model HardSkill {
   id    String  @id @default(cuid())
   title String?
 
@@ -125,7 +180,7 @@ model Skill {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  @@map("skills")
+  @@map("hard_skills")
 }
 
 model SoftSkill {
@@ -195,6 +250,7 @@ model Award {
 model LinkedinProfile {
   id           String    @id @default(cuid())
   userId       String
+  email        String  
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   headline     String?
@@ -218,6 +274,7 @@ model LinkedinProfile {
 model OptimizationReport {
   id                    String   @id @default(cuid())
   userId                String
+  email                 String
   linkedinProfileId     String
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
@@ -245,7 +302,7 @@ model OptimizationReport {
 
 model ConsultationOrder {
   id                 String             @id @default(cuid())
-  userId             String
+  userId             String? 
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   consultationStatus ConsultationStatus @default(PENDING)
@@ -255,40 +312,43 @@ model ConsultationOrder {
   requirements       Json? // Special requirements from user
   consultantId       String?
   deliveredAt        DateTime?
-  deliveryUrl        String? // Path to delivered optimized profile
+  deliveryUrl        String?
   consultantNotes    String?
-  paymentId          String? // External payment provider ID
+  paymentId          String?
   paymentStatus      PaymentStatus      @default(PENDING)
   clientName         String
   clientEmail        String
 
-  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
   consultant Consultant? @relation(fields: [consultantId], references: [id], onDelete: SetNull)
+  sale       Sale? // Link to Sale if this came from a lead conversion
+  user       User?       @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("consultation_orders")
 }
 
 model Consultant {
-  id        String   @id @default(cuid())
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-  name   String
-  email  String  @unique
-  phone  String?
-  avatar String?
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  name            String
+  email           String   @unique
+  phone           String?
+  avatar          String?
   title           String?
-  bio             String? 
-  specializations Json? 
-  skills          Json? 
+  bio             String?
+  specializations Json?
+  skills          Json?
   experience      Int?
-  isActive   Boolean @default(true)
-  maxOrders  Int     @default(5) 
-  hourlyRate Int?
-  totalOrders        Int                 @default(0)
-  completedOrders    Int                 @default(0)
-  averageRating      Float?
-  availability       Json? 
+  isActive        Boolean  @default(true)
+  maxOrders       Int      @default(5)
+  hourlyRate      Int?
+  totalOrders     Int      @default(0)
+  completedOrders Int      @default(0)
+  averageRating   Float?
+  availability    Json?
+
   consultationOrders ConsultationOrder[]
+  sales              Sale[] // NEW: Track sales by agent
 
   @@map("consultants")
 }
@@ -307,8 +367,8 @@ model Job {
   closingDate      DateTime  @map("closing_date")
   location         String?
   jobType          JobType   @map("job_type")
-  salaryMin        String?      @map("salary_min")
-  salaryMax        String?      @map("salary_max")
+  salaryMin        String?   @map("salary_min")
+  salaryMax        String?   @map("salary_max")
   currency         String?   @default("USD")
   description      String?
   requirements     String?
@@ -326,29 +386,119 @@ model Job {
   @@map("jobs")
 }
 
-enum JobType {
-  FULL_TIME @map("full-time")
-  PART_TIME @map("part-time")
-  CONTRACT  @map("contract")
-  REMOTE    @map("remote")
+model Lead {
+  id               String   @id @default(cuid())
+  email            String   @unique
+  phone            String?
+  headline         String?
+  profileUrl       String?
+  location         String?
+  industry         String?
+  summary          String?
+  skills           String[]
+  overallScore     Int
+  headlineScore    Int
+  summaryScore     Int
+  experienceScore  Int
+  skillsScore      Int
+  marketingConsent Boolean  @default(false)
+  contacted        Boolean  @default(false)
+  converted        Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  experiences   Experience[]
+  linkEducation LinkEducation[]
+  sales         Sale[]
+
+  @@index([email])
+  @@index([createdAt])
+  @@index([overallScore])
+  @@index([contacted])
+  @@index([converted])
+  @@map("leads")
 }
 
-enum JobStatus {
-  PENDING  @map("pending")
-  APPROVED @map("approved")
-  REJECTED @map("rejected")
+model LinkEducation {
+  id        String   @id @default(cuid())
+  leadId    String
+  school    String
+  degree    String?
+  field     String?
+  startYear String?
+  endYear   String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("link_educations")
 }
 
-enum ConsultationStatus {
-  PENDING
-  IN_PROGRESS
-  COMPLETED
-  CANCELLED
+model Experience {
+  id          String   @id @default(cuid())
+  leadId      String
+  title       String
+  company     String
+  location    String?
+  startDate   String?
+  endDate     String?
+  current     Boolean  @default(false)
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  lead Lead @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  @@index([leadId])
+  @@map("experiences")
 }
 
-enum PaymentStatus {
-  PENDING
-  PAID
-  FAILED
-  REFUNDED
+model Sale {
+  id     String @id @default(cuid())
+  leadId String
+  lead   Lead   @relation(fields: [leadId], references: [id], onDelete: Cascade)
+
+  // Customer details (for historical tracking)
+  customerName  String
+  customerEmail String
+  customerPhone String?
+
+  // Sale details
+  packageType PackageType
+  amount      Int
+  currency    String      @default("ZAR")
+  status      SaleStatus  @default(PENDING)
+
+  // Link to consultation order (when created)
+  consultationOrderId String?            @unique
+  consultationOrder   ConsultationOrder? @relation(fields: [consultationOrderId], references: [id], onDelete: SetNull)
+
+  // Agent/Consultant tracking
+  agentId    String?
+  agentName  String?
+  consultant Consultant? @relation(fields: [agentId], references: [id], onDelete: SetNull)
+
+  // Payment details
+  paymentMethod    String?
+  paymentReference String?
+  paidAt           DateTime?
+
+  // Service delivery
+  deliveryDeadline DateTime?
+  completedAt      DateTime?
+
+  // Notes
+  notes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([leadId])
+  @@index([agentId])
+  @@index([status])
+  @@index([createdAt])
+  @@index([packageType])
+  @@map("sales")
 }

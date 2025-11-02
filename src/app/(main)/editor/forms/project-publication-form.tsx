@@ -13,7 +13,7 @@ import {
   projectsPublicationSchema,
   ProjectsPublicationValues,
 } from "@/lib/validations";
-import { EditorFormProps } from "@/utils/types";
+import { EditorFormProps } from "types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontal, Sparkles } from "lucide-react";
 import { useEffect, useState } from "react";

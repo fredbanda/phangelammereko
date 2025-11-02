@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { auth, currentUser } from "@clerk/nextjs/server";
 import prisma from "@/utils/prisma";
 import { payfast } from "@/lib/payfast";
+import { consultationOrderSchema } from "@/lib/validations";
 
 export async function POST(request: NextRequest) {
   try {
@@ -63,29 +64,43 @@ export async function POST(request: NextRequest) {
     }
 
     // Create initial order in database
-    const order = await prisma.consultationOrder.create({
-      data: {
-        userId: dbUser.id, // Use the verified database user ID
-        clientName: `${personalInfo.firstName} ${personalInfo.lastName}`,
-        clientEmail: personalInfo.email,
-        requirements: {
-          personalInfo,
-          requirements,
-          linkedinUrl: personalInfo.linkedinUrl,
-          currentRole: requirements?.currentRole,
-          targetRole: requirements?.targetRole,
-          industry: requirements?.industry,
-          experience: requirements?.experience,
-          urgency: requirements?.urgency,
-          specificRequirements: requirements?.specificRequirements,
-        },
-        amount: amount,
-        currency: currency,
-        paymentStatus: "PENDING",
-        consultationStatus: "PENDING",
-        consultantId: null,
-      },
-    });
+  const validatedData = consultationOrderSchema.parse(body)
+ 
+     // Create the order
+     const order = await prisma.consultationOrder.create({
+       data: {
+             ...(validatedData.userId ? { userId: validatedData.userId } : {}),
+         clientName: validatedData.clientName,
+         clientEmail: validatedData.clientEmail,
+         amount: validatedData.amount,
+         currency: validatedData.currency || "ZAR",
+         consultationType: validatedData.consultationType || "linkedin_optimization",
+         consultationStatus: validatedData.consultationStatus || "PENDING",
+         paymentStatus: validatedData.paymentStatus || "PENDING",
+         requirements: validatedData.requirements || null,
+         consultantId: validatedData.consultantId || null,
+         deliveryUrl: validatedData.deliveryUrl || null,
+         consultantNotes: validatedData.consultantNotes || null,
+         paymentId: validatedData.paymentId || null,
+         deliveredAt: validatedData.deliveredAt || null,
+       },
+       include: {
+         user: {
+           select: {
+             id: true,
+             name: true,
+             email: true,
+           },
+         },
+         consultant: {
+           select: {
+             id: true,
+             name: true,
+             email: true,
+           },
+         },
+       },
+     })
     console.log(`Created order: ${JSON.stringify(order)}`);
 
     // Create PayFast payment

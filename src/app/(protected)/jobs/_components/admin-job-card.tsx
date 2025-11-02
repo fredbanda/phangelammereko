@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Separator } from "@/components/ui/separator"
 import { MapPin, Clock, DollarSign, User, Mail, CheckCircle, XCircle, Eye } from "lucide-react"
-import { Job } from "@/utils/types"
+import { Job } from "types"
 
 interface AdminJobCardProps {
   job: Job

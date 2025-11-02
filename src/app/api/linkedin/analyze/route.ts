@@ -46,6 +46,7 @@ export async function POST(request: NextRequest) {
     // Convert database record to analysis input format
     const profileInput = {
       headline: linkedinProfile.headline || "",
+      email: linkedinProfile.email || "",
       summary: linkedinProfile.summary || "",
       location: linkedinProfile.location || "",
       industry: linkedinProfile.industry || "",
@@ -74,6 +75,7 @@ export async function POST(request: NextRequest) {
     const optimizationReport = await prisma.optimizationReport.create({
       data: {
         userId: userId,
+        email: linkedinProfile.email,
         linkedinProfileId: profileId,
         overallScore: analysisResult.overallScore,
         headlineScore: analysisResult.scores.keyword || 0,

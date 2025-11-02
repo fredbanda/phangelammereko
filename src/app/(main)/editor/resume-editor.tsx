@@ -10,7 +10,7 @@ import { cn, mapToResumevalues } from "@/lib/utils";
 import Footer from "./footer";
 import useUnloadWarning from "@/hooks/useUnloadWarning";
 import useAutoSaveResume from "./useAutoSaveResume";
-import { ResumeServerData } from "@/utils/types";
+import { ResumeServerData } from "types";
 
 interface ResumeEditorProps {
   resumeToEdit?: ResumeServerData | null;

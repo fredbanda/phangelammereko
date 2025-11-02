@@ -13,7 +13,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { useEffect } from "react";
-import { EditorFormProps } from "@/utils/types";
+import { EditorFormProps } from "types";
 
 export default function GeneralInfoForm({ resumeData, setResumeData }: EditorFormProps) {
   const form = useForm<GeneralInfoValues>({

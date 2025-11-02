@@ -4,7 +4,7 @@
 
 import { useRef, useState, useTransition } from "react";
 import { useReactToPrint } from "react-to-print"; // Import the new print component
-import { ResumeServerData } from "@/utils/types";
+import { ResumeServerData } from "types";
 import Link from "next/link";
 import ResumePreview from "@/components/previews/resume-preview";
 import { mapToResumevalues } from "@/lib/utils";

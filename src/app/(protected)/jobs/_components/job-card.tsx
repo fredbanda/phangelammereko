@@ -3,7 +3,7 @@ import { Badge } from "@/components/ui/badge"
 import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { MapPin, Clock, DollarSign, Crown, Banknote } from "lucide-react"
-import type { Job } from "@/utils/types"
+import type { Job } from "types"
 import Rand from "../../../../../public/south-africa-rand.png"
 
 interface JobCardProps {

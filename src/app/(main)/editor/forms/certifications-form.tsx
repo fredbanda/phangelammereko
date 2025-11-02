@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
 import { certificationSchema, CertificationValues } from "@/lib/validations";
-import { EditorFormProps } from "@/utils/types";
+import { EditorFormProps } from "types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontal } from "lucide-react";
 import { useEffect } from "react";

@@ -1,4 +1,4 @@
-import { EditorFormProps } from "@/utils/types";
+import { EditorFormProps } from "types";
 import GeneralInfoForm from "./forms/general-info-form";
 import PersonalInfoForm from "./forms/personal-info-form";
 import WorkExperienceForm from "./forms/work-experience-form";

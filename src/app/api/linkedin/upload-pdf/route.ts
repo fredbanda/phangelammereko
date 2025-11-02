@@ -40,6 +40,7 @@ export async function POST(request: NextRequest) {
     // ✅ Save record linked to the DB user
     const linkedinProfile = await prisma.linkedinProfile.create({
       data: {
+        email: dbUser.email,
         userId: dbUser.id, // safe now
         profilePdf: fileName,
         lastAnalyzed: new Date(),

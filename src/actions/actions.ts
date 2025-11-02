@@ -86,7 +86,7 @@ export async function saveResume(values: ResumeValues) {
           include: {
             workExperiences: true,
             educations: true,
-            skills: true,
+            hardSkills: true,
             softSkills: true,
             certifications: true,
             awards: true,
@@ -344,7 +344,7 @@ console.log("Testing Cloudinary connection...");
               endDate: edu.endDate || null,
             })),
           },
-          skills: { create: skills },
+          hardSkills: { create: skills },
           softSkills: { create: softSkills },
           certifications: { 
             create: certifications.map((cert) => ({
@@ -417,7 +417,7 @@ export async function deleteResume(id: string) {
       where: { resumeId: id }
     });
     
-    await tx.skill.deleteMany({
+    await tx.hardSkill.deleteMany({
       where: { resumeId: id }
     });
 

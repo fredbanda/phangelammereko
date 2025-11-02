@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server"
-import  prisma  from "@/utils/prisma" // Adjust path based on your Prisma setup
+import prisma from "@/utils/prisma"
+import { consultationOrderSchema } from "@/lib/validations"
 
 export async function GET(request: NextRequest) {
   try {
@@ -76,34 +77,43 @@ export async function POST(request: NextRequest) {
       )
     }
 
+     const validatedData = consultationOrderSchema.parse(body)
     // Create new consultation order
-    const newOrder = await prisma.consultationOrder.create({
-      data: {
-        clientName,
-        clientEmail,
-        consultationType,
-        amount,
-        currency,
-        requirements,
-        userId,
-        consultationStatus: 'PENDING',
-        paymentStatus: 'PENDING',
-      },
-      select: {
-        id: true,
-        clientName: true,
-        clientEmail: true,
-        consultationType: true,
-        amount: true,
-        currency: true,
-        consultationStatus: true,
-        paymentStatus: true,
-        createdAt: true,
-        updatedAt: true,
-        requirements: true,
-        userId: true,
-      },
-    })
+   const newOrder = await prisma.consultationOrder.create({
+         data: {
+               ...(validatedData.userId ? { userId: validatedData.userId } : {}),
+           clientName: validatedData.clientName,
+           clientEmail: validatedData.clientEmail,
+           amount: validatedData.amount,
+           currency: validatedData.currency || "ZAR",
+           consultationType: validatedData.consultationType || "linkedin_optimization",
+           consultationStatus: validatedData.consultationStatus || "PENDING",
+           paymentStatus: validatedData.paymentStatus || "PENDING",
+           requirements: validatedData.requirements || null,
+           consultantId: validatedData.consultantId || null,
+           deliveryUrl: validatedData.deliveryUrl || null,
+           consultantNotes: validatedData.consultantNotes || null,
+           paymentId: validatedData.paymentId || null,
+           deliveredAt: validatedData.deliveredAt || null,
+         },
+         include: {
+           user: {
+             select: {
+               id: true,
+               name: true,
+               email: true,
+             },
+           },
+           consultant: {
+             select: {
+               id: true,
+               name: true,
+               email: true,
+             },
+           },
+         },
+       })
+   
 
     return NextResponse.json({
       success: true,

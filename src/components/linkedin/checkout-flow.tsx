@@ -17,6 +17,13 @@ import { z } from "zod"
 import { useForm } from "react-hook-form"
 import { zodResolver } from "@hookform/resolvers/zod"
 
+// ✅ Price ID mapping based on urgency
+const URGENCY_PRICE_IDS = {
+  standard: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_STANDARD!,
+  priority: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_PRIORITY!,
+  urgent: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_URGENT!,
+}
+
 const personalInfoSchema = z.object({
   firstName: z.string().min(2, "First name must be at least 2 characters"),
   lastName: z.string().min(2, "Last name must be at least 2 characters"),
@@ -31,7 +38,9 @@ const requirementsSchema = z.object({
   industry: z.string().min(2, "Please enter your industry"),
   experience: z.string().min(1, "Please select your experience level"),
   specificRequirements: z.string().optional(),
-  urgency: z.string().min(1, "Please select urgency level"),
+  urgency: z.enum(["standard", "priority", "urgent"], {
+    required_error: "Please select urgency level",
+  }),
 })
 
 const paymentSchema = z.object({
@@ -80,7 +89,7 @@ export default function CheckoutFlow() {
     setCurrentStep(3)
   })
 
-  // ✅ FIXED: Now collects and passes all form data to Stripe
+  // ✅ FIXED: Now uses correct price ID based on urgency
   async function handlePremiumClick() {
     try {
       setLoading(true);
@@ -90,19 +99,22 @@ export default function CheckoutFlow() {
       const requirements = requirementsForm.getValues();
       
       // Validate that all data is filled
-      if (!personalInfo.firstName || !personalInfo.email || !requirements.currentRole) {
+      if (!personalInfo.firstName || !personalInfo.email || !requirements.currentRole || !requirements.urgency) {
         toast.error("Please fill in all required fields", { position: "top-right" });
         setLoading(false);
         return;
       }
 
-      // Calculate price based on urgency
-      let amount = 200000; // Base price R2000 in cents
-      if (requirements.urgency === "priority") {
-        amount = 250000; // R2500
-      } else if (requirements.urgency === "urgent") {
-        amount = 300000; // R3000
+      // ✅ Get the correct Stripe price ID based on urgency
+      const priceId = URGENCY_PRICE_IDS[requirements.urgency];
+      
+      if (!priceId) {
+        toast.error("Invalid urgency level selected", { position: "top-right" });
+        setLoading(false);
+        return;
       }
+
+      console.log(`💳 Using price ID for ${requirements.urgency}:`, priceId);
 
       // Structure the order data correctly
       const orderData = {
@@ -129,9 +141,7 @@ export default function CheckoutFlow() {
 
       console.log("📦 Submitting order data:", orderData);
 
-      const priceId = process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED!;
-
-      // ✅ Pass orderData to createCheckoutSession
+      // ✅ Pass the correct priceId to createCheckoutSession
       const session = await createCheckoutSession(priceId, orderData);
 
       if (session.url) {
@@ -165,7 +175,7 @@ export default function CheckoutFlow() {
 
   const progress = (currentStep / steps.length) * 100
 
-  // Success screen (keep as is)
+  // Success screen
   if (isSubmitted) {
     const personalInfo = personalForm.getValues()
     const requirements = requirementsForm.getValues()

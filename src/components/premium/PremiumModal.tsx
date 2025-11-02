@@ -120,7 +120,7 @@ export default function PremiumModal() {
               <Button
                 onClick={() =>
                   handlePremiumClick(
-                    process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_PREMIUM!,
+                    process.env.price_1S57sNDDBuZoYIGgpREp89O6!,
                   )
                 }
                 disabled={loading}

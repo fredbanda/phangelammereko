@@ -1,5 +1,5 @@
 import prisma from "@/utils/prisma"
-import { resumeDataInclude } from "@/utils/types"
+import { resumeDataInclude } from "types"
 import { auth } from "@clerk/nextjs/server"
 import { Metadata } from "next"
 import ResumeItem from "./ResumeItem"

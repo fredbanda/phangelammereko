@@ -16,6 +16,7 @@ interface AnalysisPageProps {
 // Define the expected type for ProfileAnalyzer input
 interface ProfileInput {
   headline: string;
+  email: string;
   summary: string;
   location: string;
   industry: string;
@@ -100,9 +101,11 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
         ? linkedinProfile.skills.map((skill: any) => String(skill))
         : [];
 
+    
       // Construct profileInput with correct types
       const profileInput: ProfileInput = {
         headline: linkedinProfile.headline || "",
+        email: linkedinProfile.email || "",
         summary: linkedinProfile.summary || "",
         location: linkedinProfile.location || "",
         industry: linkedinProfile.industry || "",
@@ -125,6 +128,7 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
       const optimizationReport = await prisma.optimizationReport.create({
         data: {
           userId: userId,
+          email: linkedinProfile.email,
           linkedinProfileId: profileId,
           overallScore: analysisResult.overallScore,
           headlineScore: analysisResult.scores.keyword || 0,

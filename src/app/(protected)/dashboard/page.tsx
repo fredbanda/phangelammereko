@@ -1,317 +1,254 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-export const dynamic = "force-dynamic";
+// File: app/dashboard/page.tsx
+"use client";
 
-import { Suspense } from "react"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Button } from "@/components/ui/button"
-import { Badge } from "@/components/ui/badge"
-import { Progress } from "@/components/ui/progress"
-import { FileText, ShoppingCart, TrendingUp, Clock, CheckCircle, AlertCircle, Shield } from "lucide-react"
-import Link from "next/link"
+import { useState } from 'react';
+import { 
+  LayoutDashboard, 
+  Users, 
+  ShoppingCart, 
+  FileText, 
+  Calendar,
+  Settings
+} from 'lucide-react';
+import { LeadsDashboard } from '@/components/leads-dashboard';
 
-async function DashboardStats() {
-  try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/dashboard-stats`, {
-      cache: "no-store",
-    })
 
-    console.log(response)
-    
+type DashboardView = 'overview' | 'leads' | 'orders' | 'resumes' | 'consultations' | 'settings';
 
-    if (!response.ok) {
-      throw new Error("Failed to fetch stats")
-    }
+export default function MainDashboard() {
+  const [activeView, setActiveView] = useState<DashboardView>('overview');
 
-    const stats = await response.json()
-    console.log(stats);
-    
+  const navigationItems = [
+    { id: 'overview' as DashboardView, label: 'Overview', icon: LayoutDashboard },
+    { id: 'leads' as DashboardView, label: 'Leads', icon: Users },
+    { id: 'orders' as DashboardView, label: 'Orders', icon: ShoppingCart },
+    { id: 'resumes' as DashboardView, label: 'Resumes', icon: FileText },
+    { id: 'consultations' as DashboardView, label: 'Consultations', icon: Calendar },
+    { id: 'settings' as DashboardView, label: 'Settings', icon: Settings },
+  ];
 
-    return (
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Reports</CardTitle>
-            <FileText className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.totalReports}</div>
-            <p className="text-xs text-muted-foreground">LinkedIn profiles analyzed</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Active Orders</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.activeOrders}</div>
-            <p className="text-xs text-muted-foreground">Consultations in progress</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Avg. Score</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{stats.avgScore}</div>
-            <p className="text-xs text-muted-foreground">Profile optimization score</p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <ShoppingCart className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">R{stats.totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">From LinkedIn optimization</p>
-          </CardContent>
-        </Card>
-      </div>
-    )
-  } catch (error) {
-    console.log(error)
-    
-    return (
-      <div className="text-center py-8">
-        <p className="text-muted-foreground">Failed to load dashboard stats</p>
-      </div>
-    )
-  }
-}
-
-async function RecentReports() {
-  try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/recent-reports`, {
-      cache: "no-store",
-    })
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch reports")
-    }
-
-    const reports = await response.json()
-
-    return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Recent Reports</CardTitle>
-            <CardDescription>Latest LinkedIn profile analyses</CardDescription>
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/reports">View All</Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {reports.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No reports yet</p>
-            ) : (
-              reports.slice(0, 3).map((report: any) => (
-                <div key={report.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex-1">
-                    <h4 className="font-medium">
-                      {report.profile.fullName} - {report.profile.headline}
-                    </h4>
-                    <p className="text-sm text-muted-foreground">
-                      Analyzed on {new Date(report.createdAt).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <div className="font-medium">Score: {report.overallScore}/100</div>
-                      <Progress value={report.overallScore} className="w-20 h-2" />
-                    </div>
-                    <Button asChild variant="outline" size="sm">
-                      <Link href={`/linkedin-optimizer/analysis/${report.profileId}`}>View</Link>
-                    </Button>
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  } catch (error) {
-    console.log(error)
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Reports</CardTitle>
-          <CardDescription>Latest LinkedIn profile analyses</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-4">Failed to load reports</p>
-        </CardContent>
-      </Card>
-    )
-  }
-}
-
-async function RecentOrders() {
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case "completed":
-        return <CheckCircle className="h-4 w-4 text-green-500" />
-      case "in_progress":
-        return <Clock className="h-4 w-4 text-blue-500" />
-      default:
-        return <AlertCircle className="h-4 w-4 text-yellow-500" />
-    }
-  }
-
-  const getStatusBadge = (status: string) => {
-    const variants = {
-      completed: "default",
-      in_progress: "secondary",
-      pending: "outline",
-    } as const
-
-    return <Badge variant={variants[status as keyof typeof variants] || "outline"}>{status.replace("_", " ")}</Badge>
-  }
-
-  try {
-    const response = await fetch(`${process.env.NEXTAUTH_URL}/api/admin/recent-orders`, {
-      cache: "no-store",
-    })
-
-    if (!response.ok) {
-      throw new Error("Failed to fetch orders")
-    }
-
-    const orders = await response.json()
-
-    return (
-      <Card>
-        <CardHeader className="flex flex-row items-center justify-between">
-          <div>
-            <CardTitle>Recent Orders</CardTitle>
-            <CardDescription>Consultation orders and status</CardDescription>
-          </div>
-          <Button asChild variant="outline" size="sm">
-            <Link href="/dashboard/orders">View All</Link>
-          </Button>
-        </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
-            {orders.length === 0 ? (
-              <p className="text-muted-foreground text-center py-4">No orders yet</p>
-            ) : (
-              orders.slice(0, 3).map((order: any) => (
-                <div key={order.id} className="flex items-center justify-between p-4 border rounded-lg">
-                  <div className="flex items-center gap-3">
-                    {getStatusIcon(order.status)}
-                    <div>
-                      <h4 className="font-medium">LinkedIn Profile Optimization</h4>
-                      <p className="text-sm text-muted-foreground">
-                        {order.user.name} • {new Date(order.createdAt).toLocaleDateString()}
-                      </p>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="text-right">
-                      <div className="font-medium">R{order.amount.toLocaleString()}</div>
-                      {order.status === "in_progress" && order.expectedDelivery && (
-                        <p className="text-xs text-muted-foreground">
-                          Due: {new Date(order.expectedDelivery).toLocaleDateString()}
-                        </p>
-                      )}
-                    </div>
-                    {getStatusBadge(order.status)}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </CardContent>
-      </Card>
-    )
-  } catch (error) {
-    console.log(error)
-    return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Recent Orders</CardTitle>
-          <CardDescription>Consultation orders and status</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <p className="text-muted-foreground text-center py-4">Failed to load orders</p>
-        </CardContent>
-      </Card>
-    )
-  }
-}
-
-export default function AdminDashboardPage() {
   return (
-    <div className="container mx-auto py-8 space-y-8">
-      <div className="flex items-center justify-between">
-        <div>
-          <div className="flex items-center gap-2 mb-2">
-            <Shield className="h-5 w-5 text-rose-600" />
-            <span className="text-sm font-medium text-rose-600">Admin Dashboard</span>
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+      {/* Top Navigation Bar */}
+      <nav className="bg-white shadow-md border-b border-gray-200 sticky top-0 z-40">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center justify-between h-16">
+            {/* Logo/Brand */}
+            <div className="flex items-center">
+              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                Admin Dashboard
+              </h1>
+            </div>
+
+            {/* Desktop Navigation */}
+            <div className="hidden md:flex items-center space-x-1">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveView(item.id)}
+                    className={`
+                      flex items-center gap-2 px-4 py-2 rounded-lg font-medium text-sm transition-all
+                      ${isActive 
+                        ? 'bg-blue-600 text-white shadow-md' 
+                        : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      }
+                    `}
+                  >
+                    <Icon className="w-4 h-4" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">LinkedIn Optimization Overview</h1>
-          <p className="text-muted-foreground">Monitor reports, orders, and business performance</p>
+
+          {/* Mobile Navigation */}
+          <div className="md:hidden pb-3 overflow-x-auto">
+            <div className="flex space-x-2">
+              {navigationItems.map((item) => {
+                const Icon = item.icon;
+                const isActive = activeView === item.id;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => setActiveView(item.id)}
+                    className={`
+                      flex flex-col items-center gap-1 px-4 py-2 rounded-lg text-xs font-medium transition-all whitespace-nowrap
+                      ${isActive 
+                        ? 'bg-blue-600 text-white' 
+                        : 'text-gray-600 hover:bg-gray-100'
+                      }
+                    `}
+                  >
+                    <Icon className="w-5 h-5" />
+                    <span>{item.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
-        <Button asChild>
-          <Link href="/linkedin-optimizer">New Analysis</Link>
-        </Button>
-      </div>
+      </nav>
 
-      <Suspense fallback={<div>Loading stats...</div>}>
-        <DashboardStats />
-      </Suspense>
-
-      <div className="grid gap-8 md:grid-cols-1 lg:grid-cols-2">
-        <Suspense fallback={<div>Loading reports...</div>}>
-          <RecentReports />
-        </Suspense>
-
-        <Suspense fallback={<div>Loading orders...</div>}>
-          <RecentOrders />
-        </Suspense>
-      </div>
-
-      <Card>
-        <CardHeader>
-          <CardTitle>Quick Actions</CardTitle>
-          <CardDescription>Get started with LinkedIn optimization</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
-            <Button asChild variant="outline" className="h-auto p-4 bg-transparent">
-              <Link href="/linkedin-optimizer" className="flex flex-col items-center gap-2">
-                <FileText className="h-6 w-6" />
-                <span>Analyze Profile</span>
-                <span className="text-xs text-muted-foreground">Get free analysis</span>
-              </Link>
-            </Button>
-
-            <Button asChild variant="outline" className="h-auto p-4 bg-transparent">
-              <Link href="/linkedin-optimizer/checkout" className="flex flex-col items-center gap-2">
-                <ShoppingCart className="h-6 w-6" />
-                <span>Book Consultation</span>
-                <span className="text-xs text-muted-foreground">R2,000 expert review</span>
-              </Link>
-            </Button>
-
-            <Button asChild variant="outline" className="h-auto p-4 bg-transparent">
-              <Link href="/dashboard/reports" className="flex flex-col items-center gap-2">
-                <TrendingUp className="h-6 w-6" />
-                <span>View Reports</span>
-                <span className="text-xs text-muted-foreground">All your analyses</span>
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Main Content Area */}
+      <main>
+        {activeView === 'overview' && <OverviewDashboard />}
+        {activeView === 'leads' && <LeadsDashboard />}
+        {activeView === 'orders' && <OrdersDashboard />}
+        {activeView === 'resumes' && <ResumesDashboard />}
+        {activeView === 'consultations' && <ConsultationsDashboard />}
+        {activeView === 'settings' && <SettingsDashboard />}
+      </main>
     </div>
-  )
+  );
+}
+
+// ============================================================
+// Placeholder Components (Create these as you build them)
+// ============================================================
+
+function OverviewDashboard() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+        <p className="text-gray-600 mt-2">Welcome to your admin dashboard</p>
+      </div>
+
+      {/* Quick Stats Grid */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <StatCard
+          title="Total Leads"
+          value="152"
+          change="+12%"
+          icon={Users}
+          color="blue"
+        />
+        <StatCard
+          title="Active Orders"
+          value="48"
+          change="+8%"
+          icon={ShoppingCart}
+          color="green"
+        />
+        <StatCard
+          title="Resumes"
+          value="89"
+          change="+23%"
+          icon={FileText}
+          color="purple"
+        />
+        <StatCard
+          title="Consultations"
+          value="34"
+          change="+15%"
+          icon={Calendar}
+          color="orange"
+        />
+      </div>
+
+      {/* Recent Activity */}
+      <div className="bg-white rounded-xl shadow-md p-6">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Recent Activity</h2>
+        <p className="text-gray-500">No recent activity to display</p>
+      </div>
+    </div>
+  );
+}
+
+function OrdersDashboard() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-xl shadow-md p-12 text-center">
+        <ShoppingCart className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Orders Dashboard</h2>
+        <p className="text-gray-600">This section is coming soon...</p>
+        <p className="text-sm text-gray-500 mt-2">
+          You&apos;ll be able to manage consultation orders here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ResumesDashboard() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-xl shadow-md p-12 text-center">
+        <FileText className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Resumes Dashboard</h2>
+        <p className="text-gray-600">This section is coming soon...</p>
+        <p className="text-sm text-gray-500 mt-2">
+          You&apos;ll be able to manage user resumes here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function ConsultationsDashboard() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-xl shadow-md p-12 text-center">
+        <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Consultations Dashboard</h2>
+        <p className="text-gray-600">This section is coming soon...</p>
+        <p className="text-sm text-gray-500 mt-2">
+          You&apos;ll be able to schedule and manage consultations here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+function SettingsDashboard() {
+  return (
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="bg-white rounded-xl shadow-md p-12 text-center">
+        <Settings className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Settings</h2>
+        <p className="text-gray-600">This section is coming soon...</p>
+        <p className="text-sm text-gray-500 mt-2">
+          You&apos;ll be able to configure system settings here
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Stat Card Component
+// ============================================================
+
+interface StatCardProps {
+  title: string;
+  value: string;
+  change: string;
+  icon: React.ComponentType<{ className?: string }>;
+  color: 'blue' | 'green' | 'purple' | 'orange';
+}
+
+function StatCard({ title, value, change, icon: Icon, color }: StatCardProps) {
+  const colorClasses = {
+    blue: 'bg-blue-100 text-blue-600 border-blue-500',
+    green: 'bg-green-100 text-green-600 border-green-500',
+    purple: 'bg-purple-100 text-purple-600 border-purple-500',
+    orange: 'bg-orange-100 text-orange-600 border-orange-500',
+  };
+
+  return (
+    <div className={`bg-white rounded-xl shadow-md p-6 border-l-4 ${colorClasses[color].split(' ')[2]}`}>
+      <div className="flex items-center justify-between mb-4">
+        <div className={`p-3 rounded-lg ${colorClasses[color].split(' ')[0]}`}>
+          <Icon className={`w-6 h-6 ${colorClasses[color].split(' ')[1]}`} />
+        </div>
+        <span className="text-green-600 text-sm font-medium">{change}</span>
+      </div>
+      <p className="text-3xl font-bold text-gray-900">{value}</p>
+      <p className="text-sm text-gray-600 mt-1">{title}</p>
+    </div>
+  );
 }

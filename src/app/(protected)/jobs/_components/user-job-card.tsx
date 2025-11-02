@@ -6,7 +6,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card"
 import { PromotionModal } from "../_components/promotion-modal"
 import { MapPin, Clock, DollarSign, Crown, Eye, Edit, Zap } from "lucide-react"
 import Link from "next/link"
-import type { Job } from "@/utils/types"
+import type { Job } from "types"
 
 interface UserJobCardProps {
   job: Job

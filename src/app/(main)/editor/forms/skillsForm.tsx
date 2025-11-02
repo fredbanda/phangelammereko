@@ -8,8 +8,8 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
-import { skillSchema, SkillValues } from "@/lib/validations";
-import { EditorFormProps } from "@/utils/types";
+import { hardSkillSchema, HardSkillValues } from "@/lib/validations";
+import { EditorFormProps } from "types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontal, Sparkles, Brain } from "lucide-react";
 import { useEffect, useState } from "react";
@@ -23,8 +23,8 @@ export default function SkillsForm({
   const [isGeneratingSkills, setIsGeneratingSkills] = useState(false);
   const [skillLoading, setSkillLoading] = useState<Record<number, boolean>>({});
 
-  const form = useForm<SkillValues>({
-    resolver: zodResolver(skillSchema),
+  const form = useForm<HardSkillValues>({
+    resolver: zodResolver(hardSkillSchema),
     defaultValues: {
       skills: resumeData.skills || [],
     },
@@ -252,7 +252,7 @@ Enhanced skill:
 }
 
 interface SkillsFormItemProps {
-  form: UseFormReturn<SkillValues>;
+  form: UseFormReturn<HardSkillValues>;
   index: number;
   remove: (index: number) => void;
   onEnhanceWithAI: (index: number) => void;

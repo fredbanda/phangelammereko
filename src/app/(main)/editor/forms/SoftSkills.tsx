@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
 import { softSkillSchema, SoftSkillValues } from "@/lib/validations";
-import { EditorFormProps } from "@/utils/types";
+import { EditorFormProps } from "types";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { GripHorizontal, Sparkles, Brain } from "lucide-react";
 import { useEffect, useState } from "react";

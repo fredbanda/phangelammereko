@@ -1,6 +1,6 @@
 
 
-import { ResumeServerData } from "@/utils/types"
+import { ResumeServerData } from "types"
 import { clsx, type ClassValue } from "clsx"
 import { twMerge } from "tailwind-merge"
 import { ResumeValues } from "./validations"
@@ -54,7 +54,7 @@ export function mapToResumevalues(data: ResumeServerData):ResumeValues {
       startDate: edu.startDate?.toString().split("T")[0] || undefined,
       endDate: edu.endDate?.toString().split("T")[0] || undefined,
     })),
-    skills: data.skills.map((skill) => ({
+    skills: data.hardSkills.map((skill) => ({
       title: skill.title || undefined,
     })),
     certifications: data.certifications.map((cert) => ({
