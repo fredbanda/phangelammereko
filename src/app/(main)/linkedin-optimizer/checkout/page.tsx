@@ -1,17 +1,24 @@
 "use client"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
 import { CheckCircle, Star, Clock, Users } from "lucide-react"
 import CheckoutFlow from "@/components/linkedin/checkout-flow"
+import OrderSummary from "@/components/linkedin/order-summary"
+
 
 export default function CheckoutPage() {
+  const [selectedUrgency, setSelectedUrgency] = useState<"standard" | "priority" | "urgent" | null>(null)
+
   return (
     <div className="min-h-screen bg-background">
       <div className="container mx-auto px-4 py-8">
         <div className="max-w-6xl mx-auto">
           {/* Header */}
           <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-foreground mb-4 text-balance">Professional LinkedIn Optimization</h1>
+            <h1 className="text-4xl font-bold text-foreground mb-4 text-balance">
+              Professional LinkedIn Optimization
+            </h1>
             <p className="text-xl text-muted-foreground text-pretty">
               Get expert consultation and complete profile optimization for maximum impact
             </p>
@@ -20,47 +27,13 @@ export default function CheckoutPage() {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Checkout Form */}
             <div className="lg:col-span-2">
-              <CheckoutFlow
-                
-              />
+              <CheckoutFlow onUrgencyChange={setSelectedUrgency} />
             </div>
 
             {/* Order Summary & Benefits */}
             <div className="space-y-6">
-              {/* Order Summary */}
-              <Card className="border-2 border-primary/20">
-                <CardHeader className="bg-gradient-to-r from-primary/5 to-accent/5">
-                  <CardTitle className="flex items-center gap-2">
-                    <Star className="w-5 h-5 text-accent" />
-                    Order Summary
-                  </CardTitle>
-                </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="space-y-4">
-                    <div className="flex justify-between items-center">
-                      <span className="font-medium">LinkedIn Profile Optimization</span>
-                      <Badge variant="outline">Premium</Badge>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>Personal consultation</span>
-                      <span>Included</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>Complete profile rewrite</span>
-                      <span>Included</span>
-                    </div>
-                    <div className="flex justify-between items-center text-sm text-muted-foreground">
-                      <span>LinkedIn banner design</span>
-                      <span className="text-green-600 font-medium">Free (Limited time)</span>
-                    </div>
-                    <hr />
-                    <div className="flex justify-between items-center text-lg font-bold">
-                      <span>Total</span>
-                      <span>R2,000</span>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
+              {/* Dynamic Order Summary */}
+              <OrderSummary urgency={selectedUrgency} />
 
               {/* What's Included */}
               <Card>
@@ -139,7 +112,13 @@ export default function CheckoutPage() {
                     </div>
                     <div>
                       <p className="font-medium">Profile Optimization</p>
-                      <p className="text-sm text-muted-foreground">3-5 business days</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedUrgency === "urgent" 
+                          ? "1-2 business days"
+                          : selectedUrgency === "priority"
+                          ? "3-4 business days"
+                          : "5-7 business days"}
+                      </p>
                     </div>
                   </div>
                   <div className="flex items-center gap-3">

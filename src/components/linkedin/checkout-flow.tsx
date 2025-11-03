@@ -55,7 +55,11 @@ type PersonalInfo = z.infer<typeof personalInfoSchema>
 type Requirements = z.infer<typeof requirementsSchema>
 type Payment = z.infer<typeof paymentSchema>
 
-export default function CheckoutFlow() {
+interface CheckoutFlowProps {
+  onUrgencyChange?: (urgency: "standard" | "priority" | "urgent" | null) => void
+}
+
+export default function CheckoutFlow({ onUrgencyChange }: CheckoutFlowProps) {
   const [currentStep, setCurrentStep] = useState(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -267,6 +271,10 @@ export default function CheckoutFlow() {
                 personalForm.reset()
                 requirementsForm.reset()
                 paymentForm.reset()
+                // Reset urgency in parent
+                if (onUrgencyChange) {
+                  onUrgencyChange(null)
+                }
               }}
             >
               Submit Another Order
@@ -457,7 +465,18 @@ export default function CheckoutFlow() {
 
               <div>
                 <Label htmlFor="urgency">Timeline *</Label>
-                <select className="w-full p-2 border rounded-md" {...requirementsForm.register("urgency")}>
+                <select 
+                  className="w-full p-2 border rounded-md" 
+                  {...requirementsForm.register("urgency")}
+                  onChange={(e) => {
+                    const value = e.target.value as "standard" | "priority" | "urgent"
+                    requirementsForm.setValue("urgency", value)
+                    // 🎯 Notify parent component of urgency change
+                    if (onUrgencyChange) {
+                      onUrgencyChange(value || null)
+                    }
+                  }}
+                >
                   <option value="">Select timeline</option>
                   <option value="standard">Standard (5-7 days) - R2,000</option>
                   <option value="priority">Priority (3-4 days) - R2,500</option>
