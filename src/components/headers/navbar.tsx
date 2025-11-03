@@ -26,7 +26,7 @@ export default function Navbar() {
 
   const checkAdminStatus = async (email: string) => {
     try {
-      const response = await fetch('/api/admin/check', {
+      const response = await fetch('/api/admin/checkout', {
         headers: {
           'x-user-email': email,
         },

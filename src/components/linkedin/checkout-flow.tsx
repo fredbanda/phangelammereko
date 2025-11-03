@@ -19,9 +19,9 @@ import { zodResolver } from "@hookform/resolvers/zod"
 
 // ✅ Price ID mapping based on urgency
 const URGENCY_PRICE_IDS = {
-  standard: process.env.STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_STANDARD!,
-  priority: process.env.STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_PRIORITY!,
-  urgent: process.env.STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_URGENT!,
+  standard: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_STANDARD!,
+  priority: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_PRIORITY!,
+  urgent: process.env.NEXT_PUBLIC_STRIPE_PRICE_ID_LINKEDIN_OPTIMIZED_URGENT!,
 }
 
 const personalInfoSchema = z.object({
