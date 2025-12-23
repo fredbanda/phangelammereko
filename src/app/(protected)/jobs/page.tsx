@@ -21,9 +21,10 @@ export default async function JobsPage() {
             <Link href="/job-home" className="text-muted-foreground hover:text-foreground">
               Home
             </Link>
-            <a href="/post-job" className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
+            <Link href="/jobs/create"
+              className="bg-primary text-primary-foreground px-4 py-2 rounded-md hover:bg-primary/90">
               Post Job
-            </a>
+            </Link>
           </nav>
         </div>
       </header>

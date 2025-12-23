@@ -118,7 +118,7 @@ Our LinkedIn Profile Optimization service provides expert analysis and personali
             prospects with our tools and services.
           </p>
           <Button size="lg" asChild variant="destructive">
-            <Link href="/linkedin-optimizer">
+            <Link href="/linkedin-optimizer/checkout">
               Start LinkedIn Analysis
               <ArrowRight className="ml-2 h-4 w-4" />
             </Link>
