@@ -109,7 +109,7 @@ Our LinkedIn Profile Optimization service provides expert analysis and personali
 
       {/* CTA Section */}
       <section className="dark:bg-accent px-4 py-20">
-        <div className="container mx-auto text-center mt-[-80px]">
+        <div className="container mx-auto text-center -m-16">
           <h2 className="text-foreground mb-6 text-3xl font-bold">
             Ready to Boost Your Career?
           </h2>
