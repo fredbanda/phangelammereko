@@ -20,7 +20,7 @@ export default function Footer() {
               height={100}
               className='size-8 mr-3'
                />
-                      <span className='text-white font-bold text-2xl'>EunnyTech</span>
+                      <span className='text-white font-bold text-2xl'>CareerForty</span>
    
             </Link> 
             <p className="text-justify mt-[-30px]">
