@@ -223,14 +223,14 @@ export function LinkedinAnalyzer() {
         <TabsContent value="input" className="space-y-6">
           <Tabs defaultValue="upload" className="w-full">
             <TabsList className="grid w-full grid-cols-2 mb-6">
-              <TabsTrigger value="upload" className="flex items-center gap-2 ">
-                <Button size="lg" variant="emerald" className="px-8 cursor-pointer">
+              <TabsTrigger value="upload" className="flex items-center gap-2 " asChild>
+                <Button size="lg" variant="emerald" className="px-8 cursor-pointer text-white">
                 <Upload className="w-4 h-4" />
                   PDF Upload
                   </Button>
               </TabsTrigger>
-              <TabsTrigger value="manual" className="flex items-center gap-2">
-                <Button size="lg" variant="default" className="px-8 cursor-pointer">
+              <TabsTrigger value="manual" className="flex items-center gap-2" asChild>
+                <Button size="lg" variant="default" className="px-8 cursor-pointer text-white">
                 <Edit3 className="w-4 h-4" />
                 
                   Manual Input
