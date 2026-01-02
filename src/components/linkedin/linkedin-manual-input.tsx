@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 
 import { useState } from "react"
@@ -32,7 +33,11 @@ import * as z from "zod"
 
 type FormData = z.infer<typeof LinkedinProfileInputSchema>
 
-export function LinkedinManualInput() {
+interface LinkedinManualInputProps {
+  onProfileSubmit?: (data: any) => void
+}
+
+export function LinkedinManualInput({ onProfileSubmit }: LinkedinManualInputProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [newSkill, setNewSkill] = useState("")
   const [showTips, setShowTips] = useState(false)
@@ -40,6 +45,7 @@ export function LinkedinManualInput() {
   const form = useForm<FormData>({
     resolver: zodResolver(LinkedinProfileInputSchema),
     defaultValues: {
+      name: "",
       headline: "",
       email: "",
       summary: "",
@@ -95,8 +101,10 @@ export function LinkedinManualInput() {
   // Calculate completion percentage
   const calculateCompletion = () => {
     let completed = 0
-    let total = 7 // Base fields
+    const total = 10 // Base fields
 
+    if (watchedFields.name) completed++
+    if (watchedFields.email) completed++
     if (watchedFields.headline) completed++
     if (watchedFields.summary) completed++
     if (watchedFields.location) completed++
@@ -106,7 +114,6 @@ export function LinkedinManualInput() {
     if (watchedFields.education?.some(edu => edu.school && edu.degree)) completed++
     if (skills.length > 0) completed++
 
-    total = 8
     return Math.round((completed / total) * 100)
   }
 
@@ -132,6 +139,15 @@ export function LinkedinManualInput() {
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
+    
+    if (onProfileSubmit) {
+      // Use the parent component's submit handler
+      onProfileSubmit(data)
+      setIsSubmitting(false)
+      return
+    }
+
+    // Fallback to original behavior
     toast.loading("Analyzing your LinkedIn profile...")
 
     try {
@@ -215,20 +231,55 @@ export function LinkedinManualInput() {
 
             <div className="grid md:grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="headline" className="flex items-center gap-1">
-                  Professional Headline <span className="text-destructive">*</span>
-                  {watchedFields.headline && <CheckCircle2 className="w-4 h-4 text-green-500 ml-1" />}
+                <Label htmlFor="name" className="flex items-center gap-1">
+                  Full Name <span className="text-destructive">*</span>
+                  {watchedFields.name && <CheckCircle2 className="w-4 h-4 text-green-500 ml-1" />}
                 </Label>
                 <Input
-                  id="headline"
-                  placeholder="e.g., Senior Software Engineer | Full-Stack Developer | Tech Innovator"
-                  {...form.register("headline")}
-                  className={form.formState.errors.headline ? "border-destructive" : ""}
+                  id="name"
+                  placeholder="Your full name"
+                  {...form.register("name")}
+                  className={form.formState.errors.name ? "border-destructive" : ""}
                 />
-                {form.formState.errors.headline && (
-                  <p className="text-sm text-destructive mt-1">{form.formState.errors.headline.message}</p>
+                {form.formState.errors.name && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.name.message}</p>
                 )}
               </div>
+              <div>
+                <Label htmlFor="email" className="flex items-center gap-1">
+                  Email Address <span className="text-destructive">*</span>
+                  {watchedFields.email && <CheckCircle2 className="w-4 h-4 text-green-500 ml-1" />}
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="your.email@example.com"
+                  {...form.register("email")}
+                  className={form.formState.errors.email ? "border-destructive" : ""}
+                />
+                {form.formState.errors.email && (
+                  <p className="text-sm text-destructive mt-1">{form.formState.errors.email.message}</p>
+                )}
+              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="headline" className="flex items-center gap-1">
+                Professional Headline <span className="text-destructive">*</span>
+                {watchedFields.headline && <CheckCircle2 className="w-4 h-4 text-green-500 ml-1" />}
+              </Label>
+              <Input
+                id="headline"
+                placeholder="e.g., Senior Software Engineer | Full-Stack Developer | Tech Innovator"
+                {...form.register("headline")}
+                className={form.formState.errors.headline ? "border-destructive" : ""}
+              />
+              {form.formState.errors.headline && (
+                <p className="text-sm text-destructive mt-1">{form.formState.errors.headline.message}</p>
+              )}
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="location" className="flex items-center gap-1">
                   <MapPin className="w-4 h-4" />
@@ -237,9 +288,6 @@ export function LinkedinManualInput() {
                 </Label>
                 <Input id="location" placeholder="e.g., Cape Town, South Africa" {...form.register("location")} />
               </div>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-4">
               <div>
                 <Label htmlFor="industry" className="flex items-center gap-1">
                   <Building className="w-4 h-4" />
@@ -248,14 +296,15 @@ export function LinkedinManualInput() {
                 </Label>
                 <Input id="industry" placeholder="e.g., Information Technology & Services" {...form.register("industry")} />
               </div>
-              <div>
-                <Label htmlFor="profileUrl" className="flex items-center gap-1">
-                  <LinkIcon className="w-4 h-4" />
-                  LinkedIn Profile URL
-                  {watchedFields.profileUrl && <CheckCircle2 className="w-4 h-4 text-green-500 ml-1" />}
-                </Label>
-                <Input id="profileUrl" placeholder="https://linkedin.com/in/yourname" {...form.register("profileUrl")} />
-              </div>
+            </div>
+
+            <div>
+              <Label htmlFor="profileUrl" className="flex items-center gap-1">
+                <LinkIcon className="w-4 h-4" />
+                LinkedIn Profile URL
+                {watchedFields.profileUrl && <CheckCircle2 className="w-4 h-4 text-green-500 ml-1" />}
+              </Label>
+              <Input id="profileUrl" placeholder="https://linkedin.com/in/yourname" {...form.register("profileUrl")} />
             </div>
 
             <div>
@@ -411,7 +460,7 @@ export function LinkedinManualInput() {
                     <Input placeholder="e.g., University of Cape Town" {...form.register(`education.${index}.school`)} />
                   </div>
                   <div>
-                    <Label>Degree</Label>
+                    <Label>Degree / Qualification</Label>
                     <Input placeholder="e.g., Bachelor of Science" {...form.register(`education.${index}.degree`)} />
                   </div>
                 </div>

@@ -294,6 +294,7 @@ export type LinkedinEducation = z.infer<typeof LinkedinEducationSchema>;
 ------------------------------------------------------------ */
 export const LinkedinProfileInputSchema = z.object({
   // Contact
+  name: z.string().min(2, "Name must be at least 2 characters"),
   email: z.string().email("Please enter a valid email address"),
   phone: optionalString,
 

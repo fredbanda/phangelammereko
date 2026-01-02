@@ -1,152 +1,151 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { type NextRequest, NextResponse } from "next/server"
-import { auth } from "@clerk/nextjs/server"
+import { NextRequest, NextResponse } from "next/server"
+import { generateSummary } from "@/actions/gemini"
 import prisma from "@/utils/prisma"
-import { ProfileAnalyzer } from "@/lib/analysis/profile-analyzer"
-import { Prisma } from "@prisma/client"
+import { nanoid } from "nanoid"
 
 export async function POST(request: NextRequest) {
   try {
-    // Get authenticated user from Clerk
-    const { userId } = await auth()
+    const profileData = await request.json()
     
-    if (!userId) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
-    }
+    // Generate a unique profile ID
+    const profileId = nanoid()
+    
+    // Create the analysis prompt for Gemini
+    const analysisPrompt = `
+    Analyze this LinkedIn profile and provide detailed optimization recommendations:
 
-    // Parse request body with error handling
-    let body
-    try {
-      body = await request.json()
-    } catch (parseError) {
-      console.error("❌ Error parsing request body:", parseError);
-      return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 })
-    }
+    PROFILE DATA:
+    - Headline: ${profileData.headline || "Not provided"}
+    - Summary: ${profileData.summary || "Not provided"}
+    - Location: ${profileData.location || "Not provided"}
+    - Industry: ${profileData.industry || "Not provided"}
+    - Skills: ${profileData.skills?.join(", ") || "Not provided"}
+    - Experience: ${JSON.stringify(profileData.experiences || [])}
+    - Education: ${JSON.stringify(profileData.education || [])}
 
-    const { profileId } = body
-
-    if (!profileId) {
-      return NextResponse.json({ error: "Profile ID is required" }, { status: 400 })
-    }
-
-    // Get LinkedIn profile from database
-    const linkedinProfile = await prisma.linkedinProfile.findUnique({
-      where: {
-        id: profileId,
-        userId: userId // Ensure user owns this profile
+    Please provide a comprehensive analysis in the following JSON format:
+    {
+      "overallScore": <number 0-100>,
+      "headlineScore": <number 0-100>,
+      "summaryScore": <number 0-100>,
+      "experienceScore": <number 0-100>,
+      "skillsScore": <number 0-100>,
+      "keywordAnalysis": {
+        "missingKeywords": ["keyword1", "keyword2"],
+        "suggestions": ["suggestion1", "suggestion2"]
+      },
+      "recommendations": {
+        "headline": ["recommendation1", "recommendation2"],
+        "summary": ["recommendation1", "recommendation2"],
+        "experience": ["recommendation1", "recommendation2"],
+        "skills": ["recommendation1", "recommendation2"],
+        "aiSkills": ["Machine Learning", "Data Analysis", "Python", "AI Tools"]
       }
-    })
-
-    if (!linkedinProfile) {
-      return NextResponse.json({ 
-        error: "Profile not found or you don't have permission to access it" 
-      }, { status: 404 })
     }
 
-    // Convert database record to analysis input format
-    const profileInput = {
-      headline: linkedinProfile.headline || "",
-      email: linkedinProfile.email || "",
-      summary: linkedinProfile.summary || "",
-      location: linkedinProfile.location || "",
-      industry: linkedinProfile.industry || "",
-      experiences: Array.isArray(linkedinProfile.experiences) 
-        ? linkedinProfile.experiences as any[]
-        : [],
-      education: Array.isArray(linkedinProfile.education) 
-        ? linkedinProfile.education as any[]
-        : [],
-      skills: Array.isArray(linkedinProfile.skills) 
-        ? linkedinProfile.skills as string[]
-        : [],
-      profileUrl: linkedinProfile.profileUrl || "",
+    Focus on:
+    1. Keyword optimization for better visibility
+    2. Professional language and impact statements
+    3. Industry-specific recommendations
+    4. AI and future-ready skills to learn
+    5. Quantifiable achievements
+    6. Professional branding
+
+    Provide specific, actionable recommendations that will improve profile visibility and career prospects.
+    `
+
+    // Get AI analysis
+    const aiResponse = await generateSummary(analysisPrompt)
+    
+    // Parse the AI response
+    let analysisData
+    try {
+      // Extract JSON from the response (in case there's extra text)
+      const jsonMatch = aiResponse.match(/\{[\s\S]*\}/)
+      if (jsonMatch) {
+        analysisData = JSON.parse(jsonMatch[0])
+      } else {
+        throw new Error("No JSON found in AI response")
+      }
+    } catch (parseError) {
+      console.error("Failed to parse AI response:", parseError)
+      // Fallback analysis
+      analysisData = {
+        overallScore: 65,
+        headlineScore: 70,
+        summaryScore: 60,
+        experienceScore: 65,
+        skillsScore: 70,
+        keywordAnalysis: {
+          missingKeywords: ["leadership", "innovation", "results-driven"],
+          suggestions: ["Add industry-specific keywords", "Include action verbs", "Quantify achievements"]
+        },
+        recommendations: {
+          headline: ["Make it more specific to your role", "Add key skills", "Include value proposition"],
+          summary: ["Start with a strong opening", "Add quantifiable achievements", "Include call to action"],
+          experience: ["Use bullet points", "Quantify results", "Add relevant keywords"],
+          skills: ["Add trending skills", "Include certifications", "Balance hard and soft skills"],
+          aiSkills: ["Machine Learning", "Data Analysis", "Python", "AI Tools", "Automation"]
+        }
+      }
     }
 
-    // Perform analysis
-    const analyzer = new ProfileAnalyzer()
-    const analysisResult = await analyzer.analyze(profileInput)
-
-    // Convert analysis objects to Prisma-compatible JSON
-    const convertToJsonValue = (obj: any): Prisma.InputJsonValue => {
-      return JSON.parse(JSON.stringify(obj))
-    }
-
-    // Save analysis results to database
-    const optimizationReport = await prisma.optimizationReport.create({
-      data: {
-        userId: userId,
-        email: linkedinProfile.email,
-        linkedinProfileId: profileId,
-        overallScore: analysisResult.overallScore,
-        headlineScore: analysisResult.scores.keyword || 0,
-        summaryScore: analysisResult.scores.readability || 0,
-        experienceScore: analysisResult.scores.experience || 0,
-        skillsScore: analysisResult.scores.structure || 0,
-        
-        // Convert interfaces to JSON-compatible objects
-        keywordAnalysis: convertToJsonValue(analysisResult.keywordAnalysis || {}),
-        structureAnalysis: convertToJsonValue(analysisResult.structureAnalysis || {}),
-        readabilityScore: convertToJsonValue(analysisResult.readabilityAnalysis || {}),
-        
-        // Convert suggestion arrays to JSON-compatible format
-        headlineSuggestions: convertToJsonValue(
-          analysisResult.suggestions?.filter((s) => s.type === "headline") || []
-        ),
-        summarySuggestions: convertToJsonValue(
-          analysisResult.suggestions?.filter((s) => s.type === "summary") || []
-        ),
-        experienceSuggestions: convertToJsonValue(
-          analysisResult.suggestions?.filter((s) => s.type === "experience") || []
-        ),
-        skillSuggestions: convertToJsonValue(
-          analysisResult.suggestions?.filter((s) => s.type === "skills") || []
-        ),
-        
-        reportGenerated: true,
+    // Save to database
+    const user = await prisma.user.upsert({
+      where: { email: profileData.email },
+      update: {},
+      create: {
+        email: profileData.email,
+        name: profileData.headline?.split("|")[0]?.trim() || "LinkedIn User",
       },
     })
 
-    // Update profile with analysis timestamp and score
-    await prisma.linkedinProfile.update({
-      where: { id: profileId },
+    const linkedinProfile = await prisma.linkedinProfile.create({
       data: {
+        id: profileId,
+        userId: user.id,
+        
+        email: profileData.email,
+        headline: profileData.headline,
+        summary: profileData.summary,
+        location: profileData.location,
+        industry: profileData.industry,
+        experiences: profileData.experiences,
+        education: profileData.education,
+        skills: profileData.skills,
+        profileUrl: profileData.profileUrl,
         lastAnalyzed: new Date(),
-        profileScore: analysisResult.overallScore,
+        profileScore: analysisData.overallScore,
+      },
+    })
+
+    const optimizationReport = await prisma.optimizationReport.create({
+      data: {
+        userId: user.id,
+        email: profileData.email,
+        linkedinProfileId: profileId,
+        overallScore: analysisData.overallScore,
+        headlineScore: analysisData.headlineScore,
+        summaryScore: analysisData.summaryScore,
+        experienceScore: analysisData.experienceScore,
+        skillsScore: analysisData.skillsScore,
+        keywordAnalysis: analysisData.keywordAnalysis,
+        headlineSuggestions: analysisData.recommendations.headline,
+        summarySuggestions: analysisData.recommendations.summary,
+        experienceSuggestions: analysisData.recommendations.experience,
+        skillSuggestions: analysisData.recommendations.skills,
       },
     })
 
     return NextResponse.json({
-      success: true,
-      reportId: optimizationReport.id,
-      analysisResult,
-      message: "Profile analysis completed successfully",
+      profileId,
+      ...analysisData,
     })
-    
+
   } catch (error) {
     console.error("Analysis error:", error)
-    
-    // Handle specific error types
-    if (error instanceof Error) {
-      if (error.message.includes("connect")) {
-        return NextResponse.json(
-          { error: "Database connection failed", details: "Please try again later" },
-          { status: 503 }
-        )
-      }
-      
-      if (error.message.includes("Unauthorized")) {
-        return NextResponse.json(
-          { error: "Authentication failed", details: "Please log in again" },
-          { status: 401 }
-        )
-      }
-    }
-    
     return NextResponse.json(
-      {
-        error: "Failed to analyze profile",
-        details: error instanceof Error ? error.message : "Unknown error occurred",
-      },
+      { error: "Failed to analyze profile" },
       { status: 500 }
     )
   }

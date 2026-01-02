@@ -70,7 +70,7 @@ export default function PersonalInfoForm({
         return;
       }
 
-      // File is valid, proceed with upload
+      // File is valid, proceed with 
       setPhoto(file); // or whatever your state setter is
     }
   };
@@ -177,7 +177,7 @@ export default function PersonalInfoForm({
             <FormControl>
               <Input
                 {...fieldValues}
-                placeholder="Upload your photo (optional - only include if job requires it)"
+                placeholder=" your photo (optional - only include if job requires it)"
                 type="file"
                 accept={ALLOWED_TYPES.join(',')} // More specific accept attribute
                 onChange={(e) => {

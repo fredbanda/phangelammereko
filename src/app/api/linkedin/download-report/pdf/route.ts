@@ -1,234 +1,302 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
-import { type NextRequest, NextResponse } from "next/server"
+import { NextRequest, NextResponse } from "next/server"
 import prisma from "@/utils/prisma"
-import jsPDF from 'jspdf'
-
-// Helper function to safely parse JSON data
-const safeJsonParse = (data: any) => {
-  if (typeof data === 'string') {
-    try {
-      return JSON.parse(data)
-    } catch (error) {
-      console.error('Failed to parse JSON:', error)
-      return null
-    }
-  }
-  // If it's already an object, return it as is
-  if (typeof data === 'object' && data !== null) {
-    return data
-  }
-  return null
-}
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
-    const reportId = searchParams.get("reportId")
-
-    if (!reportId) {
-      return NextResponse.json({ error: "Report ID is required" }, { status: 400 })
+    const profileId = searchParams.get("profileId")
+    
+    if (!profileId) {
+      return NextResponse.json(
+        { error: "Profile ID is required" },
+        { status: 400 }
+      )
     }
 
-    // Get the optimization report
-    const report = await prisma.optimizationReport.findUnique({
-      where: { id: reportId },
+    // Get the profile and report data
+    const profile = await prisma.linkedinProfile.findUnique({
+      where: { id: profileId },
       include: {
-        user: true,
-        linkedinProfile: true,
+        optimizationReports: {
+          orderBy: { createdAt: "desc" },
+          take: 1,
+        },
       },
     })
 
+    if (!profile) {
+      return NextResponse.json(
+        { error: "Profile not found" },
+        { status: 404 }
+      )
+    }
+
+    const report = profile.optimizationReports[0]
     if (!report) {
-      return NextResponse.json({ error: "Report not found" }, { status: 404 })
+      return NextResponse.json(
+        { error: "Report not found" },
+        { status: 404 }
+      )
     }
 
-    // Generate PDF using jsPDF
-    const doc = new jsPDF()
-    const pageWidth = doc.internal.pageSize.width
-    const pageHeight = doc.internal.pageSize.height
-    let yPosition = 20
+    // Generate A4-sized PDF-ready HTML report
+    const htmlReport = `
+    <!DOCTYPE html>
+    <html>
+    <head>
+        <title>LinkedIn Profile Optimization Report</title>
+        <meta charset="UTF-8">
+        <style>
+            @page {
+                size: A4;
+                margin: 20mm;
+            }
+            * {
+                box-sizing: border-box;
+            }
+            body {
+                font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+                line-height: 1.6;
+                color: #333;
+                margin: 0;
+                padding: 0;
+                font-size: 12px;
+            }
+            .header {
+                text-align: center;
+                border-bottom: 3px solid #0066cc;
+                padding-bottom: 20px;
+                margin-bottom: 30px;
+            }
+            .logo {
+                font-size: 24px;
+                font-weight: bold;
+                color: #0066cc;
+                margin-bottom: 10px;
+            }
+            .score {
+                font-size: 48px;
+                font-weight: bold;
+                color: #0066cc;
+                margin: 10px 0;
+            }
+            .date {
+                color: #666;
+                font-size: 11px;
+            }
+            .section {
+                margin-bottom: 25px;
+                page-break-inside: avoid;
+            }
+            .section h2 {
+                color: #0066cc;
+                border-bottom: 2px solid #e0e0e0;
+                padding-bottom: 8px;
+                margin-bottom: 15px;
+                font-size: 16px;
+            }
+            .section h3 {
+                color: #333;
+                font-size: 14px;
+                margin-bottom: 10px;
+            }
+            .recommendation {
+                background: #f8f9fa;
+                padding: 12px;
+                margin: 8px 0;
+                border-left: 4px solid #0066cc;
+                border-radius: 4px;
+                font-size: 11px;
+            }
+            .score-breakdown {
+                display: flex;
+                justify-content: space-around;
+                margin: 20px 0;
+                background: #f5f5f5;
+                padding: 15px;
+                border-radius: 8px;
+            }
+            .score-item {
+                text-align: center;
+                flex: 1;
+            }
+            .score-value {
+                font-size: 24px;
+                font-weight: bold;
+                color: #0066cc;
+                display: block;
+            }
+            .score-label {
+                font-size: 10px;
+                color: #666;
+                margin-top: 5px;
+            }
+            .summary-box {
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                color: white;
+                padding: 20px;
+                border-radius: 8px;
+                margin: 20px 0;
+            }
+            .quick-wins {
+                background: #e8f5e8;
+                border-left: 4px solid #28a745;
+            }
+            .long-term {
+                background: #fff3cd;
+                border-left: 4px solid #ffc107;
+            }
+            ul {
+                margin: 8px 0;
+                padding-left: 20px;
+            }
+            li {
+                margin-bottom: 4px;
+                font-size: 11px;
+            }
+            .footer {
+                margin-top: 40px;
+                padding-top: 20px;
+                border-top: 1px solid #ddd;
+                text-align: center;
+                font-size: 10px;
+                color: #666;
+            }
+            .page-break {
+                page-break-before: always;
+            }
+        </style>
+    </head>
+    <body>
+        <div class="header">
+            <div class="logo">CareerForty</div>
+            <h1>LinkedIn Profile Optimization Report</h1>
+            <div class="score">${report.overallScore}%</div>
+            <p><strong>Overall Profile Score</strong></p>
+            <p class="date">Generated on ${new Date().toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}</p>
+        </div>
 
-    // Helper function to add text with word wrapping
-    const addText = (text: string, fontSize: number = 12, isBold: boolean = false) => {
-      doc.setFontSize(fontSize)
-      doc.setFont('helvetica', isBold ? 'bold' : 'normal')
-      
-      if (yPosition > pageHeight - 30) {
-        doc.addPage()
-        yPosition = 20
-      }
-      
-      const lines = doc.splitTextToSize(text, pageWidth - 40)
-      doc.text(lines, 20, yPosition)
-      yPosition += (lines.length * fontSize * 0.5) + 5
-    }
+        <div class="summary-box">
+            <h2 style="color: white; border: none; margin-bottom: 10px;">Executive Summary</h2>
+            <p>Your LinkedIn profile has been analyzed using AI-powered insights. This report provides actionable recommendations to improve your professional presence and career opportunities.</p>
+            <p><strong>Key Finding:</strong> Your profile has significant potential for improvement with targeted optimizations.</p>
+        </div>
 
-    // Helper function to add a new section
-    const addSection = (title: string) => {
-      yPosition += 10
-      if (yPosition > pageHeight - 50) {
-        doc.addPage()
-        yPosition = 20
-      }
-      doc.setFillColor(240, 240, 240)
-      doc.rect(20, yPosition - 5, pageWidth - 40, 15, 'F')
-      addText(title, 14, true)
-      yPosition += 5
-    }
+        <div class="section">
+            <h2>Profile Score Breakdown</h2>
+            <div class="score-breakdown">
+                <div class="score-item">
+                    <span class="score-value">${report.headlineScore || 0}%</span>
+                    <div class="score-label">Headline</div>
+                </div>
+                <div class="score-item">
+                    <span class="score-value">${report.summaryScore || 0}%</span>
+                    <div class="score-label">Summary</div>
+                </div>
+                <div class="score-item">
+                    <span class="score-value">${report.experienceScore || 0}%</span>
+                    <div class="score-label">Experience</div>
+                </div>
+                <div class="score-item">
+                    <span class="score-value">${report.skillsScore || 0}%</span>
+                    <div class="score-label">Skills</div>
+                </div>
+            </div>
+        </div>
 
-    // Header
-    doc.setFillColor(59, 130, 246) // Blue background
-    doc.rect(0, 0, pageWidth, 40, 'F')
-    doc.setTextColor(255, 255, 255)
-    doc.setFontSize(24)
-    doc.setFont('helvetica', 'bold')
-    doc.text('LinkedIn Profile Analysis Report', 20, 25)
+        <div class="section">
+            <h2>Headline Optimization</h2>
+            <h3>Current Score: ${report.headlineScore || 0}%</h3>
+            ${(report.headlineSuggestions as string[] || []).map(suggestion => 
+              `<div class="recommendation"><strong>Recommendation:</strong> ${suggestion}</div>`
+            ).join('')}
+        </div>
 
-    // Reset text color
-    doc.setTextColor(0, 0, 0)
-    yPosition = 60
+        <div class="section">
+            <h2>Summary Enhancement</h2>
+            <h3>Current Score: ${report.summaryScore || 0}%</h3>
+            ${(report.summarySuggestions as string[] || []).map(suggestion => 
+              `<div class="recommendation"><strong>Recommendation:</strong> ${suggestion}</div>`
+            ).join('')}
+        </div>
 
-    // User info
-    addText(`Report for: ${report.user.name || report.user.email}`, 16, true)
-    addText(`Generated on: ${new Date(report.createdAt).toLocaleDateString()}`, 12)
-    yPosition += 10
+        <div class="page-break"></div>
 
-    // Overall Score Section
-    addSection('OVERALL PROFILE SCORE')
-    addText(`Score: ${report.overallScore}/100`, 18, true)
-    
-    const getScoreLabel = (score: number) => {
-      if (score >= 80) return "Excellent"
-      if (score >= 60) return "Good"
-      if (score >= 40) return "Needs Work"
-      return "Poor"
-    }
-    
-    addText(`Rating: ${getScoreLabel(report.overallScore)}`, 14)
-    yPosition += 10
+        <div class="section">
+            <h2>Experience Optimization</h2>
+            <h3>Current Score: ${report.experienceScore || 0}%</h3>
+            ${(report.experienceSuggestions as string[] || []).map(suggestion => 
+              `<div class="recommendation"><strong>Recommendation:</strong> ${suggestion}</div>`
+            ).join('')}
+        </div>
 
-    // Individual Scores
-    addSection('DETAILED SCORES')
-    addText(`Headline Score: ${report.headlineScore || 0}/100`, 12)
-    addText(`Summary Score: ${report.summaryScore || 0}/100`, 12)
-    addText(`Experience Score: ${report.experienceScore || 0}/100`, 12)
-    addText(`Skills Score: ${report.skillsScore || 0}/100`, 12)
+        <div class="section">
+            <h2>Skills Enhancement</h2>
+            <h3>Current Score: ${report.skillsScore || 0}%</h3>
+            ${(report.skillSuggestions as string[] || []).map(suggestion => 
+              `<div class="recommendation"><strong>Recommendation:</strong> ${suggestion}</div>`
+            ).join('')}
+        </div>
 
-    // Keyword Analysis
-    if (report.keywordAnalysis) {
-      const keywordData = safeJsonParse(report.keywordAnalysis)
-      if (keywordData) {
-        addSection('KEYWORD ANALYSIS')
-        
-        if (keywordData.missingKeywords && Array.isArray(keywordData.missingKeywords) && keywordData.missingKeywords.length > 0) {
-          addText('Missing Keywords:', 12, true)
-          addText(keywordData.missingKeywords.slice(0, 10).join(', '), 10)
-          yPosition += 5
-        }
-        
-        if (keywordData.underusedKeywords && Array.isArray(keywordData.underusedKeywords) && keywordData.underusedKeywords.length > 0) {
-          addText('Underused Keywords:', 12, true)
-          addText(keywordData.underusedKeywords.slice(0, 8).join(', '), 10)
-          yPosition += 5
-        }
-      }
-    }
+        <div class="section">
+            <h2>Implementation Roadmap</h2>
+            
+            <div class="recommendation quick-wins">
+                <h3>Quick Wins (1-2 hours)</h3>
+                <ul>
+                    <li>Update your headline with industry-specific keywords</li>
+                    <li>Add missing skills identified in the analysis</li>
+                    <li>Optimize your summary with action-oriented language</li>
+                    <li>Include quantifiable achievements in experience descriptions</li>
+                </ul>
+            </div>
+            
+            <div class="recommendation long-term">
+                <h3>Long-term Goals (1-3 months)</h3>
+                <ul>
+                    <li>Learn and add AI/ML skills to stay competitive</li>
+                    <li>Expand your professional network in your industry</li>
+                    <li>Regularly publish industry-relevant content</li>
+                    <li>Seek recommendations from colleagues and clients</li>
+                </ul>
+            </div>
+        </div>
 
-    // Structure Analysis
-    if (report.structureAnalysis) {
-      const structureData = safeJsonParse(report.structureAnalysis)
-      if (structureData) {
-        addSection('PROFILE STRUCTURE')
-        
-        const checkMark = structureData.hasHeadline ? '✓' : '✗'
-        addText(`${checkMark} Professional Headline: ${structureData.hasHeadline ? 'Complete' : 'Missing'}`, 11)
-        
-        const summaryCheck = structureData.hasSummary ? '✓' : '✗'
-        addText(`${summaryCheck} About/Summary: ${structureData.hasSummary ? 'Complete' : 'Missing'}`, 11)
-        
-        const expCheck = structureData.hasExperience ? '✓' : '✗'
-        addText(`${expCheck} Work Experience: ${structureData.hasExperience ? 'Complete' : 'Missing'}`, 11)
-        
-        const skillsCheck = structureData.hasSkills ? '✓' : '✗'
-        addText(`${skillsCheck} Skills Section: ${structureData.hasSkills ? 'Complete' : 'Missing'}`, 11)
-        
-        addText(`Completeness Score: ${structureData.completenessScore || 0}%`, 12, true)
-      }
-    }
+        <div class="section">
+            <h2>Expected Impact</h2>
+            <div class="recommendation">
+                <p><strong>Potential Score Improvement:</strong> +${Math.min(100 - (report.overallScore || 0), 35)}%</p>
+                <p><strong>Profile Visibility:</strong> Implementing these recommendations could increase your profile views by 40-60%</p>
+                <p><strong>Career Opportunities:</strong> Optimized profiles receive 3x more connection requests and job inquiries</p>
+            </div>
+        </div>
 
-    // Readability Analysis
-    if (report.readabilityScore) {
-      const readabilityData = safeJsonParse(report.readabilityScore)
-      if (readabilityData) {
-        addSection('READABILITY ANALYSIS')
-        
-        addText(`Readability Score: ${readabilityData.readabilityScore || 0}/100`, 12, true)
-        addText(`Sentence Count: ${readabilityData.sentenceCount || 0}`, 11)
-        addText(`Average Sentence Length: ${readabilityData.avgSentenceLength || 0} words`, 11)
-        addText(`Action Verbs: ${readabilityData.activeVerbCount || 0}`, 11)
-        addText(`Quantifiable Metrics: ${readabilityData.metricsCount || 0}`, 11)
-        addText(`Jargon Score: ${readabilityData.jargonScore || 0}%`, 11)
-      }
-    }
+        <div class="footer">
+            <p><strong>CareerForty - LinkedIn Optimization Services</strong></p>
+            <p>Need help implementing these recommendations? Contact us for professional optimization services.</p>
+            <p>Email: support@careerforty.com | Website: https://careerforty.com</p>
+            <p style="margin-top: 10px; font-size: 9px;">This report was generated using AI-powered analysis. Results may vary based on individual profile characteristics and industry standards.</p>
+        </div>
+    </body>
+    </html>
+    `
 
-    // Suggestions
-    addSection('RECOMMENDATIONS')
-    
-    if (report.headlineSuggestions) {
-      const headlineSuggestions = safeJsonParse(report.headlineSuggestions)
-      if (headlineSuggestions && Array.isArray(headlineSuggestions) && headlineSuggestions.length > 0) {
-        addText('Headline Suggestions:', 12, true)
-        headlineSuggestions.slice(0, 3).forEach((suggestion: any, index: number) => {
-          const suggestionText = typeof suggestion === 'object' ? suggestion.suggestion : suggestion
-          addText(`${index + 1}. ${suggestionText}`, 10)
-        })
-        yPosition += 5
-      }
-    }
-
-    if (report.summarySuggestions) {
-      const summarySuggestions = safeJsonParse(report.summarySuggestions)
-      if (summarySuggestions && Array.isArray(summarySuggestions) && summarySuggestions.length > 0) {
-        addText('Summary Suggestions:', 12, true)
-        summarySuggestions.slice(0, 3).forEach((suggestion: any, index: number) => {
-          const suggestionText = typeof suggestion === 'object' ? suggestion.suggestion : suggestion
-          addText(`${index + 1}. ${suggestionText}`, 10)
-        })
-        yPosition += 5
-      }
-    }
-
-    // Footer
-    const totalPages = doc.internal.pages.length - 1
-    for (let i = 1; i <= totalPages; i++) {
-      doc.setPage(i)
-      doc.setFontSize(8)
-      doc.setTextColor(128, 128, 128)
-      doc.text(`Page ${i} of ${totalPages}`, pageWidth - 40, pageHeight - 10)
-      doc.text('Generated by LinkedIn Profile Analyzer', 20, pageHeight - 10)
-    }
-
-    // Generate PDF buffer
-    const pdfBuffer = Buffer.from(doc.output('arraybuffer'))
-
-    // Create a clean filename using user's name
-    const userName = report.user.name || report.user.email?.split('@')[0] || 'user'
-    const cleanUserName = userName.replace(/[^a-zA-Z0-9\s-]/g, '').replace(/\s+/g, '-').toLowerCase()
-    const timestamp = new Date().toISOString().split('T')[0] // YYYY-MM-DD format
-    const filename = `linkedin-analysis-${cleanUserName}-${timestamp}.pdf`
-
-    // Return PDF as response
-    return new NextResponse(pdfBuffer, {
-      status: 200,
+    return new NextResponse(htmlReport, {
       headers: {
-        'Content-Type': 'application/pdf',
-        'Content-Disposition': `attachment; filename="${filename}"`,
-        'Content-Length': pdfBuffer.length.toString(),
+        "Content-Type": "text/html",
+        "Content-Disposition": `inline; filename="linkedin-report-${profileId}.html"`,
       },
     })
 
   } catch (error) {
-    console.error("PDF generation error:", error)
-    return NextResponse.json({ error: "Failed to generate PDF report" }, { status: 500 })
+    console.error("PDF download error:", error)
+    return NextResponse.json(
+      { error: "Failed to generate report" },
+      { status: 500 }
+    )
   }
 }

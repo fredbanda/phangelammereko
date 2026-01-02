@@ -50,10 +50,10 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       profileId: linkedinProfile.id,
-      message: "PDF uploaded successfully",
+      message: "PDF ed successfully",
     })
   } catch (error) {
-    console.error("PDF upload error:", error)
-    return NextResponse.json({ error: "Failed to upload PDF" }, { status: 500 })
+    console.error("PDF  error:", error)
+    return NextResponse.json({ error: "Failed to  PDF" }, { status: 500 })
   }
 }

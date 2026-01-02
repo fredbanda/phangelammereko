@@ -15,6 +15,7 @@ interface AnalysisPageProps {
 
 // Define the expected type for ProfileAnalyzer input
 interface ProfileInput {
+  name: string;
   headline: string;
   email: string;
   summary: string;
@@ -104,6 +105,7 @@ export default async function AnalysisPage({ params }: AnalysisPageProps) {
     
       // Construct profileInput with correct types
       const profileInput: ProfileInput = {
+        name: linkedinProfile.name || linkedinProfile.headline?.split("|")[0]?.trim() || "LinkedIn User",
         headline: linkedinProfile.headline || "",
         email: linkedinProfile.email || "",
         summary: linkedinProfile.summary || "",

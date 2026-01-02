@@ -251,6 +251,7 @@ model LinkedinProfile {
   id           String    @id @default(cuid())
   userId       String
   email        String  
+  name         String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
   headline     String?

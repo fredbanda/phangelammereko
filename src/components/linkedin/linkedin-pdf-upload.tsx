@@ -18,7 +18,11 @@ interface UploadState {
   success: boolean;
 }
 
-export function LinkedinPdfUpload() {
+interface LinkedinPdfUploadProps {
+  onProfileSubmit?: (data: any) => void
+}
+
+export function LinkedinPdfUpload({ onProfileSubmit }: LinkedinPdfUploadProps) {
   const router = useRouter();
   const [uploadState, setUploadState] = useState<UploadState>({
     file: null,
@@ -90,6 +94,20 @@ export function LinkedinPdfUpload() {
       }
 
       const result = await response.json();
+
+      if (onProfileSubmit) {
+        // Use the parent component's submit handler
+        onProfileSubmit(result.profileData)
+        setUploadState((prev) => ({
+          ...prev,
+          uploading: false,
+          progress: 100,
+          success: true,
+          error: null,
+        }))
+        toast.success("Profile uploaded and ready for analysis!")
+        return
+      }
 
       setUploadState((prev) => ({
         ...prev,
