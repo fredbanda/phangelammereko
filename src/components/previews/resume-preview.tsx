@@ -74,7 +74,7 @@ export default function ResumePreview({
         <WorkExperienceSection resumeData={resumeData} />
         <EducationSection resumeData={resumeData} />
         <SoftSkillsSection resumeData={resumeData} />
-        <SkillsSection resumeData={resumeData} />
+        <HardSkillsSection resumeData={resumeData} />
         <CertificationsSection resumeData={resumeData} />
         <AwardsSection resumeData={resumeData} />
         <ProjectsPublicationSection resumeData={resumeData} />
@@ -283,11 +283,11 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
   );
 }
 
-function SkillsSection({ resumeData }: ResumeSectionProps) {
-  const { skills, colorHex } = resumeData;
+function HardSkillsSection({ resumeData }: ResumeSectionProps) {
+  const { hardSkills, colorHex } = resumeData;
 
-  const skillsNotEmpty = skills?.filter(
-    (skill) => Object.values(skill).filter(Boolean).length > 0,
+  const skillsNotEmpty = hardSkills?.filter(
+    (hardSkill) => Object.values(hardSkill).filter(Boolean).length > 0,
   );
   if (!skillsNotEmpty) return null;
 
@@ -302,9 +302,9 @@ function SkillsSection({ resumeData }: ResumeSectionProps) {
         >
          Hard Skills
         </p>
-        {skillsNotEmpty.map((skill, index) => (
+        {skillsNotEmpty.map((hardSkill, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
-            <p className="text-xs font-normal">{skill.title}</p>
+            <p className="text-xs font-normal">{hardSkill.title}</p>
           </div>
         ))}
       </div>
@@ -338,11 +338,11 @@ function SoftSkillsSection({ resumeData }: ResumeSectionProps) {
         <p className="text-lg font-semibold" style={{ color: colorHex }}>
           Soft Skills
         </p>
-        {softSkillsNotEmpty.map((soft, index) => (
+        {softSkillsNotEmpty.map((softSkill, index) => (
           <div key={index} className="break-inside-avoid space-y-1">
             {/* Handle different possible property names */}
             <p className="text-xs font-normal">
-              {soft.title || soft.title || soft.title || 'Unnamed Skill'}
+              {softSkill.title || softSkill.title || softSkill.title || 'Unnamed Skill'}
             </p>
           </div>
         ))}

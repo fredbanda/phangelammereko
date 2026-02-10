@@ -16,7 +16,7 @@ import { useEffect, useState } from "react";
 import { useFieldArray, useForm, UseFormReturn } from "react-hook-form";
 import { toast } from "sonner"; // Assuming you're using sonner for toasts
 
-export default function SkillsForm({
+export default function HardSkillsForm({
   resumeData,
   setResumeData,
 }: EditorFormProps) {
@@ -26,7 +26,7 @@ export default function SkillsForm({
   const form = useForm<HardSkillValues>({
     resolver: zodResolver(hardSkillSchema),
     defaultValues: {
-      skills: resumeData.skills || [],
+      hardSkills: resumeData.hardSkills || [],
     },
   });
 
@@ -36,8 +36,8 @@ export default function SkillsForm({
       if (!isValid) return;
       setResumeData({
         ...resumeData,
-        skills:
-          values.skills?.filter((ski) => ski !== undefined) || [],
+        hardSkills:
+          values.hardSkills?.filter((ski) => ski !== undefined) || [],
       });
     });
     return unsubscribe;
@@ -45,7 +45,7 @@ export default function SkillsForm({
 
   const { fields, append, remove } = useFieldArray({
     control: form.control,
-    name: "skills",
+    name: "hardSkills",
   });
 
   const generateSkillsFromWorkExperience = async () => {
@@ -133,13 +133,13 @@ Generate skills based on the work experiences provided above.
     const currentValues = form.getValues();
     
     // Add null check for skills array
-    if (!currentValues.skills || currentValues.skills.length <= index) {
+    if (!currentValues.hardSkills || currentValues.hardSkills.length <= index) {
       toast.error('Invalid skill entry.');
       setSkillLoading((prevState) => ({ ...prevState, [index]: false }));
       return;
     }
     
-    const currentSkill = currentValues.skills[index];
+    const currentSkill = currentValues.hardSkills[index];
     
     if (!currentSkill || !currentSkill.title?.trim()) {
       toast.error('Please enter a skill keyword to enhance with AI.');
@@ -171,8 +171,8 @@ Enhanced skill:
 `);
 
       // Update the form field with the enhanced skill
-      form.setValue(`skills.${index}.title`, response.trim());
-      await form.trigger(`skills.${index}.title`);
+      form.setValue(`hardSkills.${index}.title`, response.trim());
+      await form.trigger(`hardSkills.${index}.title`);
       
       toast.success('✅ Skill enhanced with AI!');
     } catch (error) {
@@ -275,13 +275,13 @@ function SkillsFormItem({
       
       <FormField
         control={form.control}
-        name={`skills.${index}.title`}
+        name={`hardSkills.${index}.title`}
         render={({ field }) => (
           <FormItem>
             <FormControl>
               <Textarea
                 {...field}
-                placeholder="e.g. JavaScript, Team Leadership, Project Management"
+                placeholder="e.g. JavaScript, Python, React, SQL, AWS"
                 autoFocus
                 rows={2}
               />

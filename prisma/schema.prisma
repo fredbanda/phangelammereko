@@ -88,7 +88,11 @@ model User {
 
   linkedinProfiles    LinkedinProfile[]
   optimizationReports OptimizationReport[]
-  consultationOrders  ConsultationOrder[]  
+  consultationOrders  ConsultationOrder[]
+  bookmarks           Bookmark[]
+  jobApplications     JobApplication[]
+  savedSearches       SavedSearch[]
+  jobAlerts           JobAlert[]
 
   @@index([email])
   @@index([role])
@@ -126,6 +130,7 @@ model Resume {
   softSkills           SoftSkill[]
   projectsPublications ProjectsPublication[]
   awards               Award[]
+  jobApplications      JobApplication[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -143,7 +148,7 @@ model WorkExperience {
   endDate     String?
 
   resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id])
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -162,7 +167,7 @@ model Education {
   endDate       String?
 
   resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id])
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -175,7 +180,7 @@ model HardSkill {
   title String?
 
   resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id])
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -188,7 +193,7 @@ model SoftSkill {
   title String?
 
   resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id])
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -205,7 +210,7 @@ model Certification {
   year String?
 
   resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id])
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -223,7 +228,7 @@ model ProjectsPublication {
   publicationDate String?
 
   resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id])
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -239,7 +244,7 @@ model Award {
   date        String?
 
   resumeId String
-  resume   Resume @relation(fields: [resumeId], references: [id])
+  resume   Resume @relation(fields: [resumeId], references: [id], onDelete: Cascade)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -250,7 +255,7 @@ model Award {
 model LinkedinProfile {
   id           String    @id @default(cuid())
   userId       String
-  email        String  
+  email        String
   name         String?
   createdAt    DateTime  @default(now())
   updatedAt    DateTime  @updatedAt
@@ -303,7 +308,7 @@ model OptimizationReport {
 
 model ConsultationOrder {
   id                 String             @id @default(cuid())
-  userId             String? 
+  userId             String?
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
   consultationStatus ConsultationStatus @default(PENDING)
@@ -358,33 +363,120 @@ model Job {
   id               String    @id @default(cuid())
   title            String?
   company          String?
+  companyLogo      String?
+  industry         String?   @map("industry")
   firstName        String?   @map("first_name")
   lastName         String?   @map("last_name")
   companyEmail     String?   @map("company_email")
   companyPhone     String?   @map("company_phone")
+  companyContact   String?   @map("company_contact")
   posterPosition   String?   @map("poster_position")
   businessLocation String?   @map("business_location")
   openingDate      DateTime  @map("opening_date")
   closingDate      DateTime  @map("closing_date")
   location         String?
   jobType          JobType   @map("job_type")
-  salaryMin        String?   @map("salary_min")
-  salaryMax        String?   @map("salary_max")
+  salaryMin        Float?    @map("salary_min")
+  salaryMax        Float?    @map("salary_max")
   currency         String?   @default("USD")
+  skills           String[]  @default([])
   description      String?
   requirements     String?
   benefits         String?
+  experienceLevel  String?   @map("experience_level")
+  educationLevel   String?   @map("education_level")
+  applicationUrl   String?   @map("application_url")
   userId           String    @map("user_id")
   userEmail        String?   @map("user_email")
   status           JobStatus @default(PENDING)
   isPromoted       Boolean   @default(false) @map("is_promoted")
   promotedUntil    DateTime? @map("promoted_until")
+  viewCount        Int       @default(0) @map("view_count")
+  applicationCount Int       @default(0) @map("application_count")
   createdAt        DateTime  @default(now()) @map("created_at")
   updatedAt        DateTime  @updatedAt @map("updated_at")
   approvedAt       DateTime? @map("approved_at")
   approvedBy       String?   @map("approved_by")
 
+  bookmarks    Bookmark[]
+  applications JobApplication[]
+
+  @@index([industry])
+  @@index([location])
+  @@index([jobType])
+  @@index([salaryMin, salaryMax])
+  @@index([status])
+  @@index([createdAt])
   @@map("jobs")
+}
+
+model Bookmark {
+  id        String   @id @default(cuid())
+  userId    String
+  jobId     String
+  createdAt DateTime @default(now())
+
+  job  Job  @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, jobId])
+  @@index([userId])
+  @@index([jobId])
+  @@map("bookmarks")
+}
+
+model JobApplication {
+  id          String   @id @default(cuid())
+  jobId       String
+  userId      String
+  resumeId    String?
+  coverLetter String?
+  status      String   @default("PENDING")
+  appliedAt   DateTime @default(now())
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  job    Job     @relation(fields: [jobId], references: [id], onDelete: Cascade)
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  resume Resume? @relation(fields: [resumeId], references: [id], onDelete: SetNull)
+
+  @@unique([jobId, userId])
+  @@index([jobId])
+  @@index([userId])
+  @@index([status])
+  @@map("job_applications")
+}
+
+model SavedSearch {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  searchQuery Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@map("saved_searches")
+}
+
+model JobAlert {
+  id          String   @id @default(cuid())
+  userId      String
+  title       String
+  criteria    Json
+  isActive    Boolean  @default(true)
+  frequency   String   @default("DAILY") // DAILY, WEEKLY, INSTANT
+  lastSent    DateTime?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([isActive])
+  @@map("job_alerts")
 }
 
 model Lead {

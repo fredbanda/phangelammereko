@@ -12,13 +12,14 @@ import ResumePrintView from "@/components/previews/ResumePrintPreview";
 import { deleteResume } from "@/actions/actions";
 import LoadingButton from "@/components/LoadingButton";
 import { Button } from "@/components/ui/button";
-import { DialogHeader, DialogFooter } from "@/components/ui/dialog";
 import {
   Dialog,
   DialogContent,
   DialogTitle,
   DialogDescription,
-} from "@radix-ui/react-dialog";
+  DialogHeader,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import {
   DropdownMenu,
   DropdownMenuTrigger,
@@ -180,34 +181,31 @@ function DeleteConfirmationDialog({
   }
 
   return (
-<Dialog open={open} onOpenChange={onOpenChange}>
-  <DialogContent className="max-w-lg">
-    <DialogHeader>
-      <DialogTitle>Delete Resume?</DialogTitle>
-      <DialogDescription>
-        Are you sure you want to delete this resume? This action is not
-        reversible.
-      </DialogDescription>
-    </DialogHeader>
-    <DialogFooter>
-      <LoadingButton
-        variant="destructive"
-        loading={isPending}
-        onClick={handleDelete}
-        className="w-1/2 cursor-pointer hover:bg-red-400"
-      >
-        Delete
-      </LoadingButton>
-      <Button
-        variant="default"
-        onClick={() => onOpenChange(false)}
-        className="w-1/2 cursor-pointer hover:bg-gray-600"
-      >
-        Cancel
-      </Button>
-    </DialogFooter>
-  </DialogContent>
-</Dialog>
-
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Delete Resume?</DialogTitle>
+          <DialogDescription>
+            Are you sure you want to delete this resume? This action cannot be undone.
+          </DialogDescription>
+        </DialogHeader>
+        <DialogFooter className="gap-2 sm:gap-0">
+          <Button
+            variant="outline"
+            onClick={() => onOpenChange(false)}
+            disabled={isPending}
+          >
+            Cancel
+          </Button>
+          <LoadingButton
+            variant="destructive"
+            loading={isPending}
+            onClick={handleDelete}
+          >
+            Delete
+          </LoadingButton>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }

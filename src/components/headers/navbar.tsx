@@ -59,34 +59,34 @@ export default function Navbar() {
           {isAdmin && !loading && (
             <>
               <Link 
-                href="/admin/sales" 
+                href="/admin" 
                 className="flex items-center gap-2 px-3 py-1.5 bg-purple-50 dark:bg-purple-900/30 border border-purple-200 dark:border-purple-700 rounded-lg hover:bg-purple-100 dark:hover:bg-purple-900/50 transition-colors"
               >
                 <Shield className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                <span className="font-medium text-purple-700 dark:text-purple-300">Sales Dashboard</span>
+                <span className="font-medium text-purple-700 dark:text-purple-300">Admin Dashboard</span>
               </Link>
               <Link 
-                href="/admin/leads" 
+                href="/dashboard" 
                 className="flex items-center gap-2 hover:text-purple-600 dark:hover:text-purple-400"
               >
                 <Users className="w-4 h-4" />
-                Leads
+                Dashboard
               </Link>
             </>
           )}
 
-          {/* Regular user links */}
-          {!isAdmin && user && (
-            <>
+          {/* Common links accessible to all users (logged in or not) */}
+          <Link href="/resumes">Create Resume</Link>
+          <Link href="/vacancies">Find Jobs</Link>
           
-              <Link href="/dashboard">Dashboard</Link>
+          {/* Links for logged in users only */}
+          {user && !isAdmin && (
+            <>
+              <Link href="/jobs/create">Post A Job</Link>
+              <Link href="/jobs/bookmarks">Saved Jobs</Link>
+              <Link href="/jobs/applications">My Applications</Link>
             </>
           )}
-
-          {/* Common links for all users */}
-           <Link href="/resumes">Create Resume</Link>
-          <Link href="/job-home">Vacancies</Link>
-          <Link href="/jobs/create">Post A Job</Link>
         </div>
 
         {/* User + Theme */}
@@ -122,12 +122,12 @@ export default function Navbar() {
                   <UserButton.Link
                     label="Admin Dashboard"
                     labelIcon={<Shield className="size-4" />}
-                    href="/admin/sales"
+                    href="/admin"
                   />
                   <UserButton.Link
-                    label="View Leads"
+                    label="Dashboard"
                     labelIcon={<Users className="size-4" />}
-                    href="/admin/leads"
+                    href="/dashboard"
                   />
                 </>
               )}
@@ -161,43 +161,47 @@ export default function Navbar() {
           {isAdmin && !loading && (
             <>
               <Link 
-                href="/admin/sales" 
+                href="/admin" 
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-2 font-medium"
               >
                 <DollarSign className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                Sales Dashboard
+                Admin Dashboard
               </Link>
               <Link 
-                href="/admin/leads" 
+                href="/dashboard" 
                 onClick={() => setMenuOpen(false)}
                 className="flex items-center gap-2"
               >
                 <Users className="w-5 h-5" />
-                Leads Management
+                Dashboard
               </Link>
               <div className="border-t border-gray-200 dark:border-gray-700 w-full my-2"></div>
             </>
           )}
 
-          {/* Regular Links Mobile */}
-          {!isAdmin && user && (
+          {/* Common Links Mobile */}
+          <Link href="/resumes" onClick={() => setMenuOpen(false)}>
+            Create Resume
+          </Link>
+          <Link href="/vacancies" onClick={() => setMenuOpen(false)}>
+            Find Jobs
+          </Link>
+          
+          {/* Logged in user links (non-admin) */}
+          {user && !isAdmin && (
             <>
-              <Link href="/dashboard" onClick={() => setMenuOpen(false)}>
-                Dashboard
+              <Link href="/jobs/create" onClick={() => setMenuOpen(false)}>
+                Post A Job
+              </Link>
+              <Link href="/jobs/bookmarks" onClick={() => setMenuOpen(false)}>
+                Saved Jobs
+              </Link>
+              <Link href="/jobs/applications" onClick={() => setMenuOpen(false)}>
+                My Applications
               </Link>
             </>
           )}
-
-          <Link href="/job-home" onClick={() => setMenuOpen(false)}>
-            Current Vacancies
-          </Link>
-          <Link href="/jobs/create" onClick={() => setMenuOpen(false)}>
-            Post A Job
-          </Link>
-                        <Link href="/resumes" onClick={() => setMenuOpen(false)}>
-                Create Resume
-              </Link>
         </div>
       )}
     </header>

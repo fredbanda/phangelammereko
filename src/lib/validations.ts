@@ -152,7 +152,7 @@ export type CertificationValues = z.infer<typeof certificationSchema>;
    🔹 Skills
 ------------------------------------------------------------ */
 export const hardSkillSchema = z.object({
-  skills: z.array(z.object({ 
+  hardSkills: z.array(z.object({ 
     id: z.string().optional(),
     title: optionalString 
   })).optional(),

@@ -5,7 +5,7 @@ import { GenerateSummaryInput, generateSummarySchema } from "@/lib/validations";
 
 export async function generateSummaryGemini(input: GenerateSummaryInput) {
 
-    const {jobTitle, workExperiences, skills, summary, awards, projectsPublications} = generateSummarySchema.parse(input);
+    const {jobTitle, workExperiences, hardSkills, summary, awards, projectsPublications} = generateSummarySchema.parse(input);
 
     const systemMessage = `You are a generating a resume summary to keep professional short and powerful. A professional summary should be concise, clear, and to the point. It should highlight your skills, achievements, and experiences, and provide a summary of your career trajectory. Avoid using jargon or technical terms that may not be familiar to the reader. Keep the summary between 100-150 words. just one summary please.`
 
@@ -16,7 +16,7 @@ export async function generateSummaryGemini(input: GenerateSummaryInput) {
     ${workExperiences?.map((exp) => `Position: ${exp.position}, company: ${exp.company}, description: ${exp.description}, startDate: ${exp.startDate}, endDate: ${exp.endDate}`).join("\n")}
 
     Skills:
-    ${skills?.map((skill) => `Skill: ${skill.title}`).join("\n")}
+    ${hardSkills?.map((hardSkill) => `Skill: ${hardSkill.title}`).join("\n")}
 
     Awards:
     ${awards?.map((award) => `Award: ${award.title}, description: ${award.description}, issuer: ${award.issuer}, date: ${award.date}`).join("\n")}

@@ -64,7 +64,7 @@ const ResumePrintView = forwardRef<HTMLDivElement, ResumePrintViewProps>(
         <SummarySection resumeData={resumeData} />
         <WorkExperienceSection resumeData={resumeData} />
         <EducationSection resumeData={resumeData} />
-        <SkillsSection resumeData={resumeData} />
+        <HardSkillsSection resumeData={resumeData} />
         <SoftSkillsSection resumeData={resumeData} />
         <CertificationsSection resumeData={resumeData} />
         <AwardsSection resumeData={resumeData} />
@@ -283,11 +283,11 @@ function EducationSection({ resumeData }: ResumeSectionProps) {
   );
 }
 
-function SkillsSection({ resumeData }: ResumeSectionProps) {
-  const { skills, colorHex } = resumeData;
+function HardSkillsSection({ resumeData }: ResumeSectionProps) {
+  const { hardSkills, colorHex } = resumeData;
 
-  const skillsNotEmpty = skills?.filter(
-    (skill) => Object.values(skill).filter(Boolean).length > 0,
+  const skillsNotEmpty = hardSkills?.filter(
+    (hardSkill) => Object.values(hardSkill).filter(Boolean).length > 0,
   );
   if (!skillsNotEmpty) return null;
 

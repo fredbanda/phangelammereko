@@ -54,8 +54,11 @@ export function mapToResumevalues(data: ResumeServerData):ResumeValues {
       startDate: edu.startDate?.toString().split("T")[0] || undefined,
       endDate: edu.endDate?.toString().split("T")[0] || undefined,
     })),
-    skills: data.hardSkills.map((skill) => ({
-      title: skill.title || undefined,
+    hardSkills: data.hardSkills.map((hardSkill) => ({
+      title: hardSkill.title || undefined,
+    })),
+    softSkills: data.softSkills.map((softSkill) => ({
+      title: softSkill.title || undefined,
     })),
     certifications: data.certifications.map((cert) => ({
       certification: cert.certification || undefined,

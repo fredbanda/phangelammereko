@@ -22,7 +22,7 @@ export async function saveResume(values: ResumeValues) {
       photo,
       workExperiences = [],
       educations = [],
-      skills = [],
+      hardSkills = [],
       softSkills = [],
       certifications = [],
       awards = [],
@@ -264,9 +264,9 @@ console.log("Testing Cloudinary connection...");
           endDate: edu.endDate || null,
         })),
       },
-      skills: {
+      hardSkills: {
         deleteMany: {},
-        create: skills,
+        create: hardSkills,
       },
       softSkills: {
         deleteMany: {},
@@ -305,7 +305,7 @@ console.log("Testing Cloudinary connection...");
     const includeOptions = {
       workExperiences: true,
       educations: true,
-      skills: true,
+      hardSkills: true,
       softSkills: true,
       certifications: true,
       awards: true,
@@ -344,7 +344,7 @@ console.log("Testing Cloudinary connection...");
               endDate: edu.endDate || null,
             })),
           },
-          hardSkills: { create: skills },
+          hardSkills: { create: hardSkills },
           softSkills: { create: softSkills },
           certifications: { 
             create: certifications.map((cert) => ({

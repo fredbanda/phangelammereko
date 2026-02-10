@@ -3,6 +3,7 @@ import ResumeEditor from "./resume-editor";
 import prisma from "@/utils/prisma";
 import { auth } from "@clerk/nextjs/server";
 import { resumeDataInclude } from "types";
+import LoginPrompt from "./login-prompt";
 
 interface PageProps {
   searchParams?: Promise<{
@@ -15,14 +16,13 @@ export const metadata: Metadata = {
 };
 
 export default async function EditorPage({ searchParams }: PageProps) {
-  // Await the searchParams since it's now a Promise in Next.js 15
   const resolvedSearchParams = await searchParams;
   const resumeId = resolvedSearchParams?.resumeId;
 
   const { userId } = await auth();
 
   if (!userId) {
-    return null;
+    return <LoginPrompt />;
   }
 
   const resumeToEdit = resumeId
