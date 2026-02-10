@@ -1,44 +1,63 @@
 import { clerkMiddleware, createRouteMatcher } from '@clerk/nextjs/server'
 import { NextResponse } from 'next/server'
 
-const isPublicRoute = createRouteMatcher([
-  '/',
-  '/sign-in(.*)',
-  '/sign-up(.*)',
-  '/api/webhooks(.*)',
-])
-
 const isProtectedRoute = createRouteMatcher([
   '/dashboard(.*)',
-  '/jobs(.*)',
+  '/admin(.*)',
+  '/jobs/create(.*)',
+  '/jobs/applications(.*)',
+  '/jobs/bookmarks(.*)',
   '/billing(.*)',
+  '/link-dashboard(.*)',
+  '/job-dashboard(.*)',
+  '/job-admin(.*)'
 ])
 
 const isAdminRoute = createRouteMatcher([
   '/admin(.*)',
-  '/job-admin(.*)',
+  '/dashboard(.*)',
   '/link-dashboard(.*)',
+  '/job-admin(.*)'
+])
+
+const isPublicRoute = createRouteMatcher([
+  '/',
+  '/sign-in(.*)',
+  '/sign-up(.*)',
+  '/resumes(.*)',
+  '/editor(.*)',
+  '/vacancies(.*)',
+  '/job-home(.*)',
+  '/linkedin-analyzer(.*)',
+  '/linkedin-analyzer-demo(.*)',
+  '/supportus(.*)',
+  '/termsandconditions(.*)',
+  '/api/webhooks(.*)'
 ])
 
 export default clerkMiddleware(async (auth, req) => {
   const { userId, sessionClaims } = await auth()
 
-  // Public access
+  // Allow public routes
   if (isPublicRoute(req)) {
     return NextResponse.next()
   }
 
-  // Must be logged in
-  if (!userId && isProtectedRoute(req)) {
+  // Redirect unauthenticated users to sign-in for protected routes
+  if (isProtectedRoute(req) && !userId) {
     const signInUrl = new URL('/sign-in', req.url)
     signInUrl.searchParams.set('redirect_url', req.url)
     return NextResponse.redirect(signInUrl)
   }
 
-  // Admin only
-  if (isAdminRoute(req)) {
-    const role = (sessionClaims?.publicMetadata as { role?: string })?.role
-    if (role !== 'admin') {
+  // Check admin access using Clerk metadata
+  if (isAdminRoute(req) && userId) {
+    // Check if user is admin from public metadata or custom claims
+    const metadata = sessionClaims?.metadata as { isAdmin?: boolean } | undefined
+    const publicMetadata = sessionClaims?.publicMetadata as { isAdmin?: boolean } | undefined
+    const isAdmin = metadata?.isAdmin === true || publicMetadata?.isAdmin === true
+
+    if (!isAdmin) {
       return NextResponse.redirect(new URL('/', req.url))
     }
   }
@@ -47,5 +66,8 @@ export default clerkMiddleware(async (auth, req) => {
 })
 
 export const config = {
-  matcher: ['/((?!_next|.*\\..*).*)'],
+  matcher: [
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    '/(api|trpc)(.*)',
+  ],
 }
